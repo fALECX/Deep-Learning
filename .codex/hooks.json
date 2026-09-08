@@ -1,0 +1,20 @@
+{
+  "description": "Project Agent Kit session-start instruction check.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/project-agent-kit/scripts/bootstrap.mjs\" --hook --format json --visible",
+            "commandWindows": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"$root = (git rev-parse --show-toplevel).Trim(); & node (Join-Path $root 'project-agent-kit/scripts/bootstrap.mjs') --hook --format json --visible\"",
+            "timeout": 10,
+            "additionalContextLimit": 500,
+            "statusMessage": "Checking project instructions"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+# Project-scoped Codex defaults installed by project-agent-kit.
+# The low concurrency cap is intentional for subscription-based usage.
+
+[features]
+memories = true
+hooks = true
+
+[agents]
+max_concurrent_threads_per_session = 1

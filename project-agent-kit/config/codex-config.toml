@@ -1,0 +1,9 @@
+# Merge into ~/.codex/config.toml after reviewing your existing settings.
+# Keep concurrency low on subscription usage; parallel subagents multiply context use.
+
+[features]
+memories = true
+hooks = true
+
+[agents]
+max_concurrent_threads_per_session = 1

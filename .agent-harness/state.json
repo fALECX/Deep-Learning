@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "source": "project-agent-kit",
+  "generatedAt": "2026-09-03T03:15:24.481Z",
+  "fingerprint": "f297b8dce1d2bf72",
+  "root": "C:/Users/samue/Documents/Deep Learning",
+  "instructionFiles": [
+    "AGENTS.md",
+    "CLAUDE.md"
+  ],
+  "policy": "native-memory-first; promote durable lessons only after review"
+}

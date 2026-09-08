@@ -1,0 +1,19 @@
+{
+  "description": "Inject a lightweight project-instruction and memory-policy check at session start.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.ps1\"",
+            "timeout": 10,
+            "additionalContextLimit": 500,
+            "statusMessage": "Checking project instructions"
+          }
+        ]
+      }
+    ]
+  }
+}

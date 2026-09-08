@@ -1,0 +1,18 @@
+{
+  "name": "project-agent-kit",
+  "version": "0.1.0",
+  "description": "Project Agent Kit plugin",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Project Agent Kit",
+    "shortDescription": "Use Project Agent Kit in Codex.",
+    "longDescription": "Project Agent Kit adds a local Codex plugin scaffold.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Help me use Project Agent Kit."
+  }
+}
