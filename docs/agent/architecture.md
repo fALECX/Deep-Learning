@@ -1,9 +1,9 @@
 # Architecture map
 
-Generated from the repository root on 2026-09-03T03:12:02.248Z.
+Generated from the repository root on 2026-09-13T00:00:00.000Z.
 
 - Project: Deep Learning
-- Top-level directories: Assignment 1, Week 1, Week 2, Week 3, Week 4, Week 5, Week 6, docs, output, tmp
+- Top-level directories: Assignment 1, Week 1, Week 2, Week 3, Week 4, Week 5, Week 6, Exam, docs, output, project-agent-kit
 - CI/build files: none discovered
 - Python project markers: none discovered
 

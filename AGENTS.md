@@ -8,7 +8,7 @@ This is the canonical project guidance for coding agents. Keep it short and upda
 
 - Project: Deep Learning
 - Root: repository root
-- Top-level areas: Assignment 1, Week 1, Week 2, Week 3, Week 4, Week 5, Week 6, docs, output, tmp
+- Top-level areas: Assignment 1, Week 1, Week 2, Week 3, Week 4, Week 5, Week 6, Exam, docs, output, project-agent-kit
 - Existing guidance: none at bootstrap time
 
 ## Working rules
