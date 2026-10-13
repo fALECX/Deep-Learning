@@ -57,26 +57,36 @@ Wir kürzen den Umfang **nicht** wegen der Deadline. Zu jedem Experiment schreib
 - **Abschluss (du):** Restart & Run All auf Colab T4 (Pflicht laut Spec), PDF-Export, Upload.
 - **Nicht** der EMR-Cluster: Er gehört zum Big-Data-Kurs COSC2637 und hat keine GPU, nur Spark/Hadoop.
 
-## 3b. Checkliste
+## 3b. Checkliste (Stand 13.10. abends)
 
-- [x] Daten, Paper, Rubrik analysiert, Plan steht
-- [ ] Notebook-Gerüst: Setup, Seed, EDA mit Plots, Leakage-Fix
-- [ ] Eval-Framework: CV-Splits, Metriken A+B (SemEval-Span-F1 gegen offiziellen Scorer geprüft), Baselines (E0)
-- [ ] Modellcode Multi-Task (lokaler Mini-Lauf)
-- [ ] C2-Runner (LLM) bauen und laufen lassen, früh, weil blockierend
-- [ ] E1–E9 (Grid)
-- [ ] Finales Modell, Test-Evaluation mit Bootstrap-CI, E10
-- [ ] C1, C3, C4
-- [ ] Ultimate Judgment, Limitations
-- [ ] Restart & Run All auf Colab, PDF-Export, Upload
+- [x] Daten, Paper, Rubrik, Plan
+- [x] Notebook komplett (EDA, Eval-Framework, Modell, E1–E9, Test, Explainability, C1–C4, Judgement, Deklarationen)
+- [x] C2: Gemini Pro / Flash-Lite / Ornith komplett, eingebettet
+- [x] Finaler Lauf auf Kaggle T4 (194,5 min, fehlerfrei) → `A2_s4271512.ipynb` (Outputs aus diesem Lauf, Texte danach eingesetzt; Code-Zellen identisch geprüft)
+- [x] PDF: `A2_s4271512.pdf` (81 Seiten, aus genau diesem Notebook)
+- [ ] **Du:** Probe-Set + Deklarationen lesen (Abschnitt 8 im Notebook), KI-Regeln in Canvas prüfen
+- [ ] **Du (optional, empfohlen):** Notebook in Colab öffnen, Runtime T4, die ersten Zellen laufen lassen (zeigt: läuft auf Colab)
+- [ ] **Du:** Upload `A2_s4271512.ipynb` (Canvas) + `A2_s4271512.pdf` (Turnitin-Link) bis 14.10., 23:59
+
+**Endergebnis:** Test Micro-F1 0,519 [0,469–0,565], Macro-F1 0,221, Span-F1 0,405 [0,357–0,442]. Gemini Pro (nicht einsetzbar) 0,574; lokales Ornith 0,20. Empfehlung: nur als Lehrkraft-geführte Diskussionshilfe für die Kerntechniken, nicht autonom.
+
+## 3c. Wie das Notebook gebaut wird
+
+- Quelle: `nb/01_…py` bis `nb/11_…py` (jupytext "percent"-Format: `# %%` = Code-Zelle, `# %% [markdown]` = Text-Zelle).
+- `python nb/build.py` setzt sie zu `A2_s4271512.ipynb` zusammen und bettet dabei die LLM-Antworten (`c2_llm/outputs`) und das AU-Probe-Set (`c4_probe/`) ein.
+- `A2_FAST=1 python nb/build.py --execute --out _dev_run.ipynb` = Mini-Testlauf auf der CPU (winziges Modell, 2 Folds) → findet Bugs, bevor GPU-Zeit verbraucht wird.
+- Kaggle: `kaggle_dev/` (privater Kernel `falecx/a2-persuasion-dev`, T4, Internet an).
 
 ## 4. Entscheidungen
 
-- 2026-10-12: C2 nutzt ein offenes Modell auf Colab (Qwen2.5-7B-Instruct 4-bit, Temperatur 0, + 2 Läufe mit Temp 0.7 für Variabilität).
 - 2026-10-12: **C2-Gegner:** (1) Gemini über grsai (`api.grsai.com`, Gemini-native `/v1beta/models/{model}:generateContent`, Key in `~/.env` als `GRSAI_API_KEY`). Funktionierende IDs: `gemini-3.1-flash-lite`, `gemini-3.1-pro`. Hinweis für die Limitations: grsai meldet für einen 2-Wort-Prompt ca. 87–91 Prompt-Tokens → vermutlich injizierter Wrapper/System-Prompt; die Version ist nur über `modelVersion` im Response belegt. (2) Lokal: Ornith-1.5-9B Q4_K_M (Qwen3.5-Basis, MIT, Reasoning-Modell) über LM Studio = die "auf T4 einsetzbare" Alternative.
 - 2026-10-12: Daten werden ins private Repo gepusht (User-Entscheidung). API-Keys nie ins Repo.
 - 2026-10-12: Lokale Pakete installiert (transformers 5.19, peft 0.21, pandas 3.0). Training läuft auf Colab.
 - 2026-10-12: Umfang wird nicht wegen der Deadline gekürzt (Wunsch des Users). C4 = Entity-Swap + Perturbation + selbst geschriebenes, gelabeltes Probe-Set.
+- 2026-10-12: BERTweet raus (kein Fast-Tokenizer → keine Zeichen-Offsets für Spans), ersetzt durch Twitter-RoBERTa-2021 (gleiche Ära wie die Memes).
+- 2026-10-12: Gemini ignoriert über grsai die `systemInstruction` → Anweisungen stehen bei allen LLMs in der User-Nachricht. Temperatur 1.0 (Google-Empfehlung für Gemini 3), dafür 3 Wiederholungen.
+- 2026-10-12: Zusatzdaten E9 = PTC (SemEval-2020 T11, Nachrichten, CC-BY, Zenodo). Selbst trainiert → erlaubt; kein Meme darin (geprüft).
+- 2026-10-12: Finales System = Ensemble der 5 Fold-Modelle (Schwellen sauber auf Out-of-Fold kalibriert).
 
 ## 5. Lernliste: was du verstehen musst (und wo im Kurs)
 

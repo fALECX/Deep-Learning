@@ -1,0 +1,248 @@
+<title>COSC2779 Course Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one root node, a bus line, seven pillar columns; each column is a vertical stack of topic cards. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --muted: #5b6475;
+  --line: #c9cfda;
+  --chip: #eef1f5;
+  --a2: #b4235a;
+  --a2-soft: #fbe7ef;
+  --p1: #3d6fb6; --p2: #2f8a7a; --p3: #b06a1f; --p4: #6f6a2a; --p5: #8a3fb0; --p6: #b23a3a; --p7: #3a7f3a;
+  --font-node: "IBM Plex Sans Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151b; --surface: #1a1f28; --fg: #e6e9ef; --muted: #9aa3b4; --line: #3a4252; --chip: #242b36;
+    --a2: #f06a9b; --a2-soft: #3a1f2b;
+    --p1: #7aa7ec; --p2: #5cc4b1; --p3: #e3a35f; --p4: #c9c36d; --p5: #c48ae6; --p6: #ec7d7d; --p7: #7ccc7c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151b; --surface: #1a1f28; --fg: #e6e9ef; --muted: #9aa3b4; --line: #3a4252; --chip: #242b36;
+  --a2: #f06a9b; --a2-soft: #3a1f2b;
+  --p1: #7aa7ec; --p2: #5cc4b1; --p3: #e3a35f; --p4: #c9c36d; --p5: #c48ae6; --p6: #ec7d7d; --p7: #7ccc7c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+.page { padding-inline: 16px; padding-block: 28px 48px; max-width: 1760px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
+header h1 { font-family: var(--font-node); font-weight: 700; font-size: 26px; margin: 0; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.controls button { font: 600 13px var(--font-body); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+.controls button[aria-pressed="true"] { background: var(--a2-soft); border-color: var(--a2); color: var(--a2); }
+.controls button:focus-visible { outline: 2px solid var(--a2); outline-offset: 2px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--muted); font-size: 12.5px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+.scroller { overflow-x: auto; padding-bottom: 8px; }
+.tree { min-width: 1500px; display: flex; flex-direction: column; align-items: stretch; }
+.root { align-self: center; font-family: var(--font-node); font-weight: 700; font-size: 20px; background: var(--fg); color: var(--bg); padding: 10px 26px; border-radius: 8px; position: relative; }
+.root small { display: block; font-family: var(--font-mono); font-weight: 400; font-size: 11.5px; opacity: .8; text-align: center; }
+.stem { align-self: center; width: 2px; height: 18px; background: var(--line); }
+.bus { position: relative; height: 2px; margin-inline: calc(100% / 14); background: var(--line); }
+.pillars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px; }
+.pillar { display: flex; flex-direction: column; align-items: stretch; min-width: 0; }
+.pillar::before { content: ""; align-self: center; width: 2px; height: 18px; background: var(--line); }
+.pillar-head { border-top: 5px solid var(--c); background: var(--surface); border-radius: 6px; padding: 9px 11px; box-shadow: 0 1px 0 var(--line); }
+.pillar-head h2 { font-family: var(--font-node); font-weight: 700; font-size: 16.5px; margin: 0; color: var(--c); text-wrap: balance; }
+.pillar-head .wk { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+.pillar-head p { margin: 5px 0 0; font-size: 12.5px; color: var(--muted); }
+.stack { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; padding-left: 12px; border-left: 2px solid var(--line); }
+.topic { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; display: flex; flex-direction: column; gap: 6px; }
+.topic::before { content: ""; position: absolute; left: -13px; top: 16px; width: 12px; height: 2px; background: var(--line); }
+.topic h3 { font-family: var(--font-node); font-weight: 600; font-size: 14.5px; margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.topic h3 .wk { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--muted); }
+.topic p { margin: 0; font-size: 12.5px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font-size: 11.5px; background: var(--chip); border-radius: 4px; padding: 2px 6px; }
+.apps { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 11.5px; color: var(--muted); }
+.apps b { font-weight: 600; color: var(--c); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.app { border: 1px dashed var(--c); color: var(--fg); border-radius: 4px; padding: 1px 6px; }
+.badge { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; border-radius: 3px; padding: 1px 5px; border: 1px solid var(--a2); color: var(--a2); }
+.badge.a1 { border-color: var(--muted); color: var(--muted); }
+body.focus-a2 .topic:not(.in-a2) { opacity: .28; }
+body.focus-a2 .topic.in-a2 { border-color: var(--a2); box-shadow: 0 0 0 1px var(--a2); }
+
+.links { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.links h2 { grid-column: 1 / -1; font-family: var(--font-node); font-size: 18px; margin: 4px 0 0; }
+.link { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; min-width: 0; }
+.link strong { font-family: var(--font-node); font-size: 14px; }
+.link p { margin: 4px 0 0; color: var(--muted); font-size: 12.5px; }
+@media (prefers-reduced-motion: no-preference) { body.focus-a2 .topic { transition: opacity .2s; } }
+</style>
+
+<div class="page">
+  <header>
+    <div>
+      <h1>COSC2779 Deep Learning: Course Map</h1>
+      <p>Read it top to bottom. Each column is one block of the course. Each card is a topic, with its key concepts and what it is used for. Week numbers show where it is taught.</p>
+    </div>
+    <div class="controls">
+      <button id="toggle-a2" type="button" aria-pressed="false">Highlight Assignment 2 topics</button>
+    </div>
+  </header>
+  <div class="legend">
+    <span><span class="chip">concept</span> key idea to know</span>
+    <span><span class="app" style="--c: var(--muted)">application</span> what it is used for</span>
+    <span><span class="badge">A2</span> used in Assignment 2</span>
+    <span><span class="badge a1">A1</span> used in Assignment 1</span>
+  </div>
+
+  <div class="scroller">
+    <div class="tree" id="tree">
+      <div class="root">Deep Learning<small>COSC2779 · Weeks 1–12</small></div>
+      <div class="stem"></div>
+      <div class="bus"></div>
+      <div class="pillars" id="pillars"></div>
+    </div>
+  </div>
+
+  <section class="links" id="links">
+    <h2>How the blocks connect</h2>
+  </section>
+</div>
+
+<script>
+const PILLARS = [
+  { name: "Machine learning foundations", wk: "Week 1", c: "--p1",
+    what: "What learning means and how to measure it honestly.",
+    topics: [
+      { t: "The learning problem", wk: "W1", what: "A program learns a task T from experience E, measured by performance P.",
+        concepts: ["Task, Experience, Performance", "hypothesis space", "supervised", "unsupervised", "self-supervised"], a2: true },
+      { t: "Generalisation", wk: "W1", what: "Doing well on new data, not just on the training data.",
+        concepts: ["underfitting", "overfitting", "model capacity", "generalisation gap", "Occam's razor", "double descent"], a2: true },
+      { t: "Evaluation framework", wk: "W1 · W6", what: "Split data, pick a metric, compare against a baseline.",
+        concepts: ["train / val / test", "hold-out", "cross-validation", "baseline", "never tune on test"], a2: true, a1: true },
+      { t: "Metrics", wk: "W1 · W2", what: "Numbers that say how good a model is for this task.",
+        concepts: ["accuracy", "precision", "recall", "F1", "micro vs macro", "confusion matrix", "MSE"], a2: true, a1: true },
+    ] },
+  { name: "Neural networks and training", wk: "Weeks 2–3", c: "--p2",
+    what: "The building block of everything later, and how to train it.",
+    topics: [
+      { t: "Feed-forward networks", wk: "W2", what: "Layers of weighted sums plus non-linear activations.",
+        concepts: ["perceptron", "hidden layers", "ReLU", "sigmoid", "XOR problem", "universal approximation", "depth"] },
+      { t: "Outputs and loss functions", wk: "W2", what: "The last layer and the loss must match the task.",
+        concepts: ["maximum likelihood", "sigmoid + binary cross-entropy", "softmax + cross-entropy", "MSE for regression", "class imbalance"], a2: true },
+      { t: "Optimisation", wk: "W3", what: "Change the weights step by step to reduce the loss.",
+        concepts: ["gradient descent", "backpropagation", "mini-batch SGD", "learning rate", "momentum", "RMSProp", "Adam", "initialisation", "batch norm", "exploding gradients"], a2: true },
+      { t: "Regularisation", wk: "W3", what: "Ways to reduce overfitting.",
+        concepts: ["L2 / weight decay", "dropout", "data augmentation", "early stopping", "mixup"], a2: true, a1: true },
+      { t: "Tools", wk: "W2", what: "Hardware and software that make training feasible.",
+        concepts: ["GPU vs CPU", "PyTorch tensors", "autograd", "training loop", "DataLoader"], a2: true, a1: true },
+    ] },
+  { name: "Computer vision with CNNs", wk: "Weeks 4–5", c: "--p3",
+    what: "Networks built for images and other grid data.",
+    topics: [
+      { t: "Convolution", wk: "W4", what: "A small filter slides over the image and detects local patterns.",
+        concepts: ["sparse connectivity", "parameter sharing", "kernel / filter", "padding", "stride", "channels", "feature maps", "receptive field", "1D convolution"], a1: true,
+        apps: ["image recognition", "signals / audio"] },
+      { t: "Pooling and invariance", wk: "W4", what: "Shrink feature maps and tolerate small shifts.",
+        concepts: ["max pooling", "translation invariance", "strided conv", "dilated conv", "transpose conv"], a1: true },
+      { t: "CNN architectures", wk: "W4 · W5", what: "Proven ways to stack layers.",
+        concepts: ["LeNet", "deep CNNs (VGG, ResNet)", "encoder-decoder / U-Net"],
+        apps: ["image classification", "object recognition", "OCR (reading text in images)", "segmentation (e.g. medical)"], a1: true },
+      { t: "Transfer learning for images", wk: "W5", what: "Reuse a network trained on ImageNet for a new task.",
+        concepts: ["pretrained backbone", "replace the head", "freeze then fine-tune", "smaller learning rate"], a1: true, a2: true },
+    ] },
+  { name: "Practical methodology", wk: "Week 6", c: "--p4",
+    what: "How to run a deep learning project from goal to final test.",
+    topics: [
+      { t: "Iterative workflow", wk: "W6", what: "Goal and metric, baseline, instrument, read curves, change one thing, repeat.",
+        concepts: ["define goal and metric", "default baseline", "instrumentation", "learning curves", "next move"], a1: true, a2: true },
+      { t: "Hyperparameter tuning", wk: "W6", what: "Choose settings on validation data, not on test data.",
+        concepts: ["learning rate first", "manual / grid / random search", "early stopping"], a1: true, a2: true },
+      { t: "Diagnosing problems", wk: "W6 · W7 tute", what: "Find out why a model fails before fixing it.",
+        concepts: ["data leakage", "class imbalance", "error analysis", "val loss below train loss"], a1: true, a2: true },
+    ] },
+  { name: "Sequences and language", wk: "Weeks 7–9", c: "--p5",
+    what: "Data where order matters: text, time series, speech.",
+    topics: [
+      { t: "Representing tokens", wk: "W7 · W8", what: "Turn text into numbers a network can use.",
+        concepts: ["tokenisation", "sub-word pieces (BPE)", "one-hot", "embeddings", "padding + masks"], a2: true },
+      { t: "Recurrent networks", wk: "W7", what: "Read a sequence step by step and keep a memory.",
+        concepts: ["RNN", "backprop through time", "vanishing gradients", "LSTM", "GRU", "bidirectional", "many-to-one", "many-to-many"],
+        apps: ["sentiment", "token tagging (NER)", "time series", "speech"] },
+      { t: "Attention and Transformers", wk: "W8", what: "Every token looks directly at every other token.",
+        concepts: ["seq2seq bottleneck", "attention", "query / key / value", "multi-head", "positional encoding", "encoder-only (BERT)", "decoder-only (GPT)", "encoder-decoder", "causal mask", "[CLS] token", "ViT", "O(n²) cost"], a2: true,
+        apps: ["classification", "named-entity tagging", "translation", "chatbots / LLMs", "images (ViT)"] },
+      { t: "Representation learning and foundation models", wk: "W9", what: "Pretrain once on huge unlabelled data, then adapt.",
+        concepts: ["static vs contextual embeddings", "self-supervised learning", "masked token prediction", "foundation model", "zero-shot", "feature extraction", "LoRA / PEFT", "full fine-tuning", "foundation model bias"], a2: true,
+        apps: ["any task with few labels"] },
+    ] },
+  { name: "Generative models", wk: "Week 10", c: "--p6",
+    what: "Models that create new data instead of labelling it.",
+    topics: [
+      { t: "Autoencoders", wk: "W10", what: "Compress to a small code, then rebuild the input.",
+        concepts: ["encoder / bottleneck / decoder", "reconstruction loss", "denoising AE", "overfits, cannot sample"],
+        apps: ["anomaly detection", "denoising", "feature learning"] },
+      { t: "Variational autoencoders", wk: "W10", what: "Make the code space a smooth distribution you can sample.",
+        concepts: ["latent distribution", "sample z ~ N(0, I)", "generate by decoding"] },
+      { t: "GANs", wk: "W10", what: "A generator tries to fool a discriminator.",
+        concepts: ["generator", "discriminator", "adversarial training", "conditional GAN"], apps: ["image synthesis"] },
+      { t: "Diffusion models", wk: "W10", what: "Learn to remove noise step by step.",
+        concepts: ["forward noising", "learned denoiser (U-Net)", "sampling from noise", "guidance", "latent diffusion"],
+        apps: ["text-to-image", "speech generation"] },
+    ] },
+  { name: "Interpretability and responsible AI", wk: "Weeks 11–12", c: "--p7",
+    what: "Why did the model decide this, and can we trust it?",
+    topics: [
+      { t: "Why explain models", wk: "W11", what: "Trust, debugging and accountability.",
+        concepts: ["local vs global", "post-hoc vs by design", "shortcut learning", "plausible is not faithful"], a2: true },
+      { t: "Attribution methods", wk: "W11 · W12", what: "Which input parts drove this prediction?",
+        concepts: ["occlusion", "saliency", "Grad-CAM", "Integrated Gradients", "LIME", "SHAP"], a2: true, a1: true },
+      { t: "Concepts", wk: "W11", what: "Explain with human ideas, not pixels.",
+        concepts: ["feature visualisation", "TCAV", "concept bottleneck models"] },
+      { t: "Explaining Transformers", wk: "W11 · W12", what: "Attention maps alone are not enough.",
+        concepts: ["raw attention", "attention rollout", "gradient-weighted attention", "probing", "LLM self-explanations"], a2: true },
+      { t: "Faithfulness and fairness", wk: "W11 · W12", what: "Test explanations and test for unequal treatment.",
+        concepts: ["deletion test", "randomisation check", "counterfactuals", "out-of-distribution pitfall", "per-group metrics", "human oversight"], a2: true },
+    ] },
+];
+
+const LINKS = [
+  ["Transfer learning appears twice", "Week 5 does it with CNNs on images. Week 9 does the same idea with Transformers on text. A2 uses the Week 9 version."],
+  ["Attention fixes an RNN problem", "An RNN encoder squeezes a whole sentence into one vector. Attention (Week 8) lets the model look back at every word."],
+  ["Losses are reused everywhere", "Sigmoid + binary cross-entropy (Week 2) is the loss for multi-label text in A2. Softmax + cross-entropy is the loss for single-label tasks."],
+  ["The workflow never changes", "Weeks 1 and 6 give the method: split, baseline, metric, learning curves, test once. A1 and A2 are both graded on it."],
+  ["U-Net shows up twice", "It segments images (Week 7 tutorial) and it is the denoiser inside diffusion models (Week 10)."],
+  ["Explainability uses earlier pieces", "Grad-CAM needs CNN feature maps (Week 4). Integrated Gradients and attention maps need the Transformer from Week 8."],
+];
+
+const pillarsEl = document.getElementById("pillars");
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+pillarsEl.innerHTML = PILLARS.map(p => `
+  <div class="pillar" style="--c: var(${p.c})">
+    <div class="pillar-head"><h2>${esc(p.name)}</h2><div class="wk">${esc(p.wk)}</div><p>${esc(p.what)}</p></div>
+    <div class="stack">${p.topics.map(t => `
+      <div class="topic${t.a2 ? " in-a2" : ""}">
+        <h3>${esc(t.t)} <span class="wk">${esc(t.wk)}</span>${t.a2 ? '<span class="badge">A2</span>' : ""}${t.a1 ? '<span class="badge a1">A1</span>' : ""}</h3>
+        <p>${esc(t.what)}</p>
+        <div class="chips">${t.concepts.map(c => `<span class="chip">${esc(c)}</span>`).join("")}</div>
+        ${t.apps ? `<div class="apps"><b>Used for</b>${t.apps.map(a => `<span class="app">${esc(a)}</span>`).join("")}</div>` : ""}
+      </div>`).join("")}
+    </div>
+  </div>`).join("");
+
+document.getElementById("links").insertAdjacentHTML("beforeend",
+  LINKS.map(([h, p]) => `<div class="link"><strong>${esc(h)}</strong><p>${esc(p)}</p></div>`).join(""));
+
+const btn = document.getElementById("toggle-a2");
+function setFocus(on) {
+  document.body.classList.toggle("focus-a2", on);
+  btn.setAttribute("aria-pressed", String(on));
+  try { localStorage.setItem("focus-a2", on ? "1" : "0"); } catch (e) {}
+}
+btn.addEventListener("click", () => setFocus(btn.getAttribute("aria-pressed") !== "true"));
+try { if (localStorage.getItem("focus-a2") === "1") setFocus(true); } catch (e) {}
+</script>

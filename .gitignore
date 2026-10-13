@@ -44,3 +44,11 @@ __MACOSX/
 # API credentials
 kaggle.json
 .env
+
+# Assignment 2 build/run artefacts (regenerable)
+Assignment 2/_*
+Assignment 2/kaggle_out/
+Assignment 2/kaggle_dev/
+Assignment 2/propaganda-techniques-scorer/
+Assignment 2/ptc_datasets-v2.tgz
+Assignment 2/*.html
