@@ -13,12 +13,10 @@ print("sd across seeds:", seed_tab.std().round(3).to_dict())
 
 
 # %% [markdown]
-# <!-- SEED-RESULT -->
-#
 # **Noise level.** Changing only the seed moves the selection score by a standard deviation of 0.007 and macro-F1 by
-# 0.015. Most design differences above (E3–E9) are of the same size. They should be read as "no measurable
-# difference", which is exactly why the tie rule kept the simpler options. Only E1 (encoder), E2 (adaptation) and the
-# learning-rate extremes in E6 are clearly larger than this noise.
+# 0.015. Most design differences above (E3–E9) are of the same size, so they mean "no measurable difference"; this is
+# why the tie rule kept the simpler options. Only E1 (encoder), E2 (adaptation) and the learning-rate extremes in E6
+# are clearly larger than this noise.
 
 # %% [markdown]
 # ### Summary of the development experiments

@@ -2,33 +2,26 @@
 # # Litmus: detecting persuasion techniques in meme text
 # **COSC2779 Deep Learning, Assignment 2 (Sequence Modelling)** · Student: s4271512
 #
-# The tool reads the text extracted from a meme and returns
-# **(A)** the set of persuasion techniques it uses (20-way multi-label classification) and
-# **(B)** where each technique sits in the text (multi-label span tagging).
-# **(C)** then answers the curriculum committee's four questions with experiments.
-#
-# **How to read this notebook.** Every design decision is made at the point where the evidence for it appears.
-# Each experiment states its *hypothesis and the decision it feeds* **before** it runs, so it is clear what
-# result would have changed our mind. All numbers are produced by this notebook (`Restart & Run All`),
-# except the zero-shot LLM responses for C2, which were collected outside it as the specification allows,
-# are embedded here, and are parsed and scored here.
+# The tool reads the text extracted from a meme and returns (A) the persuasion techniques it uses (20-way multi-label
+# classification) and (B) where each technique occurs in the text (span tagging). Part C answers the committee's four
+# questions with experiments.
 #
 # | Section | Content |
 # |---|---|
-# | 0 | Setup, reproducibility, data |
-# | 1 | Understanding the data and where it came from |
+# | 0 | Setup and data |
+# | 1 | Understanding the data |
 # | 2 | Evaluation framework: metrics, splits, baselines |
 # | 3 | Model: shared encoder with two self-built heads |
-# | 4 | Experiments E1–E8: encoder, adaptation strategy, architecture, head, loss, hyper-parameters, thresholds, robustness |
-# | 5 | Final model on the held-out test set, error analysis, explainability |
-# | 6 | Part C: C1 bias, C2 zero-shot comparison, C3 head agreement, C4 Australian deployment |
-# | 7 | Ultimate judgement, limitations, declarations |
+# | 4 | Experiments E1–E9 on the development pool |
+# | 5 | Final model on the test set, error analysis, explainability |
+# | 6 | Part C: C3 head agreement, C1 bias, C2 zero-shot LLMs, C4 Australian deployment |
+# | 7 | Judgement and limitations |
+# | 8, 9 | Declarations, references |
 
 # %% [markdown]
 # ## 0. Setup
-# A fixed seed is set for Python, NumPy and PyTorch, and cuDNN is put into deterministic mode. GPU kernels can
-# still introduce tiny non-determinism; for that reason every model comparison below is made across five folds
-# rather than on a single run, so conclusions never hinge on one lucky seed.
+# Fixed seed for Python, NumPy and PyTorch, and cuDNN in deterministic mode. Some GPU kernels remain slightly
+# non-deterministic, so every model comparison below is made across five folds rather than on a single run.
 
 # %%
 import os, sys, json, re, math, time, random, copy, hashlib, itertools, collections, subprocess, gc
@@ -72,10 +65,9 @@ print("torch", torch.__version__, "| device:", DEVICE,
 
 # %% [markdown]
 # ### Data
-# The assignment subset `data_2026_A2.zip` contains the six official SemEval-2021 Task 6 files for subtasks 1 and 2.
-# We verified byte-for-byte that they are identical to the public corpus on GitHub. So if the files are not next to
-# the notebook, they are downloaded from a pinned commit, which keeps the notebook runnable anywhere.
-# `task1` files hold the label set per meme (Part A) and `task2` files hold the character-offset spans (Part B).
+# The six SemEval-2021 Task 6 files for subtasks 1 and 2 (`data_2026_A2.zip`) are read from `data/`. On a fresh
+# runtime without that folder, the same files are downloaded from the official SemEval repository. `task1` files hold
+# the label set per meme (Part A), `task2` files the character-offset spans (Part B).
 
 # %%
 CORPUS_COMMIT = "796b32fa76b7a5814a48d1870d163058e81e4ce1"

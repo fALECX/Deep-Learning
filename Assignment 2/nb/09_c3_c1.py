@@ -106,27 +106,27 @@ pol = pd.DataFrame({nm: label_scores(C3_GOLD, P) for nm, P in policies.items()})
 display(pol.style.format("{:.3f}").set_caption(f"Display policies scored as labels ({len(C3_TEXT)} memes)"))
 
 # %% [markdown]
-# **C3 conclusion.** The two heads disagree on **35% of all flagged (meme, technique) pairs**: 1,308 times both say
-# yes, 583 times only the label head does, 117 times only the span head does.
+# **C3 conclusion.** The two heads disagree on 35% of all flagged (meme, technique) pairs: 1,308 times both say yes,
+# 583 times only the label head does, 117 times only the span head does.
 #
-# **Who is right when they disagree?** A label the span head does not support is correct only **29%** of the time; an
-# underlined span without a label is correct **36%** of the time. When both agree, the technique is correct **62%** of
-# the time. Agreement is therefore a strong signal of reliability, and the display-policy table shows the trade-off:
-# showing only agreed labels raises precision from 0.52 to **0.62** but lowers recall from 0.60 to 0.49.
+# **Who is right when they disagree?** A label the span head does not support is correct only 29% of the time; an
+# underlined span without a label is correct 36% of the time. When both agree, the technique is correct 62% of the
+# time. Agreement is therefore a strong signal of reliability. The display-policy table shows the trade-off: showing
+# only agreed labels raises precision from 0.52 to 0.62 but lowers recall from 0.60 to 0.49.
 #
-# **Our hypothesis was wrong.** We expected more disagreement for whole-message techniques. The opposite holds
-# (Spearman −0.50): disagreement is highest for short, rarer techniques such as Fear/prejudice (67%), Exaggeration
-# (58%), Slogans (52%) and Glittering generalities (76%). For those, the label head fires but the span head rarely
-# dares to underline anything. Whataboutism and Smears, which cover the whole meme, agree well (27% and 22%).
+# **Hypothesis rejected.** We expected more disagreement for whole-message techniques. The opposite holds (Spearman
+# −0.50): disagreement is highest for short, rarer techniques such as Fear/prejudice (67%), Exaggeration (58%),
+# Slogans (52%) and Glittering generalities (76%). For those, the label head fires but the span head rarely
+# underlines anything. Whataboutism and Smears, which cover the whole meme, agree well (27% and 22%).
 #
 # **What the screen should show.**
-# 1. **Both agree:** show the technique and underline the words. This is the default teaching moment (62% correct).
-# 2. **Label only:** show it greyed out as *"possible: the tool can't point to the words, can you?"*. Never show it as a
-#    finding: it is wrong 71% of the time.
-# 3. **Span only:** underline in a neutral colour with a question, *"could this be Smears?"*.
+# 1. Both agree: show the technique and underline the words (62% correct).
+# 2. Label only: show it greyed out as *"possible: the tool can't point to the words, can you?"*, never as a finding
+#    (it is wrong 71% of the time).
+# 3. Span only: underline in a neutral colour with a question, *"could this be Smears?"*.
 #
-# This rule never produces a label with nothing to point at, and it matches the classroom goal: the tool prompts
-# students to look, the teacher decides.
+# This rule never shows a label with nothing to point at, and it fits the classroom goal: the tool prompts students
+# to look, the teacher decides.
 #
 # **Limits.** Measured on 950 in-distribution memes, against one consensus annotation with moderate agreement. On
 # Australian memes (C4) both heads are less reliable, so the share of agreed labels will drop.
@@ -314,14 +314,14 @@ display(tmpl.style.format({c: "{:.3f}" for c in ["mean P(any technique)", "max P
 # 2. **Group error rates:** memes naming right-wing figures receive more false-positive labels (1.26 per meme vs. 0.94
 #    left and 0.90 neither) and more often a wrong "attack" label (60% vs. 45%). The confidence intervals barely
 #    overlap, but the groups also differ in content, so this alone does not prove bias.
-# 3. **Counterfactual swap, the decisive test:** swapping the side changes the predicted label set for 32.0% of the
+# 3. **Counterfactual swap (main test).** Swapping the side changes the predicted label set for 32.0% of the
 #    266 memes. But swapping to a name of the **same** side changes it for 32.7%. The paired difference is −0.8 points
 #    (95% CI −6.4 to +4.9). **We find no evidence that the side itself changes the output**; with 266 paired memes the
 #    test could have detected a difference of about 6 points. Within that, the probabilities shift in a consistent
 #    direction: left-wing names raise P(Smears) (+0.06, p < 0.001) and right-wing names raise P(Name calling)
 #    (+0.03 to +0.04). This mirrors the label asymmetry in point 1, at the level of a few percentage points.
-# 4. **The real problem is a different one: the model is very sensitive to *names* in general.** One label set in three
-#    changes when any name is replaced. The neutral templates make this concrete: "{politician} held a press
+# 4. **Name sensitivity.** The model is very sensitive to names in general: one label set in three changes
+#    when any name is replaced. The neutral templates make this concrete: "{politician} held a press
 #    conference today" gets P(any technique) of 0.19–0.46, and a visible label in 1–3 of 4 sentences, for politicians of
 #    **both** countries and **both** sides. Social groups (Muslims, immigrants, women, …) stay low (0.13–0.17), below
 #    neutral controls like "the local library" (0.19–0.27).

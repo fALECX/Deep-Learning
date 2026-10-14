@@ -24,6 +24,8 @@ body = body.replace("</head>", "<style>pre { white-space: pre-wrap !important; w
                                 " .jp-RenderedHTMLCommon td, .jp-RenderedHTMLCommon th { padding: 2px 4px !important; }"
                                 " .jp-InputPrompt, .jp-OutputPrompt { min-width: 4.6em !important; width: 4.6em !important; font-size: 9px; }"
                                 " .jp-RenderedImage img { max-width: 100% !important; height: auto; }"
+                                " .jp-RenderedMarkdown pre { break-inside: avoid; }"
+                                " .jp-RenderedMarkdown h1, .jp-RenderedMarkdown h2, .jp-RenderedMarkdown h3 { break-after: avoid; }"
                                 "@page { size: A4; margin: 12mm; } body { -webkit-print-color-adjust: exact; }</style></head>", 1)
 html_path.write_text(body, encoding="utf8")
 with sync_playwright() as p:

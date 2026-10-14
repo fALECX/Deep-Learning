@@ -26,15 +26,13 @@ print("→ chosen:", BEST)
 
 
 # %% [markdown]
-# <!-- E2-RESULT -->
-#
 # **E2 result.** Full fine-tuning beats every cheaper strategy on the selection score: frozen −0.022 ± 0.021,
 # LoRA −0.034 ± 0.018 (0/5 folds won), LoRA at 2e-3 −0.072 ± 0.051. The gap is largest on macro-F1 (0.24 vs.
 # 0.14–0.16): the rare techniques need the encoder itself to change. Our hypothesis ("LoRA within noise") is
-# **rejected**. LoRA trains only 1.4M parameters, so it is the right choice when many task adapters must be stored,
-# but here accuracy matters more and one 185M model per school machine is cheap. A surprise worth noting: the frozen
-# encoder (0.8M trainable parameters) scored slightly *higher* than LoRA. With 600 training memes per fold, LoRA's
-# extra capacity seems to add noise rather than signal.
+# rejected. LoRA trains only 1.4M parameters, so it is the right choice when many task adapters must be stored, but
+# here accuracy matters more and one 185M model per school machine is cheap. Unexpectedly, the frozen encoder (0.8M
+# trainable parameters) scored slightly higher than LoRA. With 600 training memes per fold, LoRA's extra capacity
+# seems to add noise rather than signal.
 
 # %% [markdown]
 # ### E3: One joint model, or two?
@@ -60,8 +58,6 @@ print("→ chosen:", BEST)
 
 
 # %% [markdown]
-# <!-- E3-RESULT -->
-#
 # **E3 result.** The joint model stays.
 # * Removing the span loss (label-only) changes label micro-F1 by about one point (0.560 vs. 0.570) but lowers
 #   macro-F1 from 0.24 to 0.18, so the span supervision helps the rare techniques. (Its "select" score is not
@@ -88,8 +84,6 @@ print("→ chosen:", BEST)
 
 
 # %% [markdown]
-# <!-- E4-RESULT -->
-#
 # **E4 result.** Label-wise attention is not worse than [CLS] (−0.007 ± 0.017) or mean pooling (−0.005 ± 0.026) on
 # the selection score, and it has the highest label macro-F1 (0.24 vs. 0.14 and 0.19). The differences are within
 # noise, so our self-built head is kept by the tie rule and for its per-technique attention maps.
@@ -119,8 +113,6 @@ print("→ chosen:", BEST)
 
 
 # %% [markdown]
-# <!-- E5-RESULT -->
-#
 # **E5 result.** As expected, weighting rare positives barely moves the selection score (−0.002 ± 0.027) but lifts
 # macro-F1 from 0.242 to 0.296: the tail techniques start to be found. Focal loss behaves similarly (0.288). The
 # macro-F1 rule therefore selects BCE with positive weights. Precision drops (0.56 → 0.53) while recall rises
@@ -157,8 +149,6 @@ print("→ chosen:", BEST, RESULTS[BEST]["cfg"])
 
 
 # %% [markdown]
-# <!-- E6-RESULT -->
-#
 # **E6 result.** No change passes the tie rule. Encoder learning rate 1e-5 clearly underfits (−0.036 ± 0.011);
 # 5e-5 is better on 4/5 folds (+0.015 ± 0.015), but its advantage only equals its spread, so the default is kept. A
 # head learning rate of 1e-4 is too slow (−0.034); 2e-3 is +0.011 ± 0.012; dropout 0.3 is worse (−0.010). The
@@ -179,8 +169,6 @@ plt.tight_layout(); plt.show()
 
 
 # %% [markdown]
-# <!-- CURVES-RESULT -->
-#
 # **Reading the curves.** Training loss falls smoothly in every fold. Validation span F1 levels off after about 8
 # epochs. Validation label F1 is noisy (one meme moves it by almost a point) and still drifts upwards at epoch 15 in
 # some folds, so early stopping never had to stop training. There is no sign of the validation score collapsing
@@ -190,13 +178,13 @@ plt.tight_layout(); plt.show()
 # %% [markdown]
 # ### E7: One threshold or one per technique?
 # The model outputs probabilities, and the tool needs yes/no. We compare one global threshold with per-technique
-# thresholds, both tuned on out-of-fold predictions. Per-technique thresholds are estimated on few positives for
-# rare classes, so they risk overfitting. To measure that honestly we use **nested** tuning: thresholds are fitted on
-# four folds' out-of-fold predictions and applied to the fifth.
+# thresholds, both tuned on out-of-fold predictions. Per-technique thresholds rest on few positives for rare classes
+# and may overfit, so we use nested tuning: thresholds are fitted on four folds' out-of-fold predictions and applied
+# to the fifth.
 #
 # **H:** per-technique thresholds help only for techniques with enough positives. **Decision rule:** use
 # per-technique thresholds for techniques with at least `MIN_POS` development positives, and the global threshold
-# otherwise, *only if* this beats the global threshold in the nested comparison.
+# otherwise, only if this beats the global threshold in the nested comparison.
 
 # %%
 MIN_POS = 30
@@ -231,19 +219,16 @@ print(f"paired Δ micro-F1 (per-technique − global) = {d.mean():+.3f} ± {d.st
 
 
 # %% [markdown]
-# <!-- E7-RESULT -->
-#
 # **E7 result.** Per-technique thresholds do not help in the nested comparison (−0.003 ± 0.006 micro-F1). They raise
 # recall but cost more precision. One global threshold is used.
 
 # %% [markdown]
 # ### E8: Robustness to casing, and casing augmentation
-# Every run above was also scored on lower-cased and sentence-cased validation text. About half the training
-# memes are in capitals, while students' feeds are mostly mixed case. **H:** performance drops on re-cased text,
-# and training with random re-casing (p = 0.5) removes most of the drop at little cost on the original text.
-# **Decision rule:** adopt augmentation if it keeps the selection score within noise (tie rule in reverse: it must
-# not *lose* by more than one sd) and improves lower-cased micro-F1 by more than one sd. Robustness is a deployment
-# requirement, not a tie-breaker.
+# Every run above was also scored on lower-cased and sentence-cased validation text. About half the training memes
+# are in capitals, while students' feeds are mostly mixed case. **H:** performance drops on re-cased text, and
+# training with random re-casing (p = 0.5) removes most of the drop at little cost on the original text.
+# **Decision rule:** adopt augmentation if the selection score does not drop by more than one sd and lower-cased
+# micro-F1 improves by more than one sd.
 
 # %%
 base = {k: v for k, v in RESULTS[BEST]["cfg"].items() if k != "seed"}
@@ -262,9 +247,7 @@ print(f"Δ select {d_sel.mean():+.3f} ± {d_sel.std(ddof=1):.3f}; Δ lower-cased
 
 
 # %% [markdown]
-# <!-- E8-RESULT -->
-#
-# **E8 result.** The hypothesis is rejected in an informative way: the model is **already robust to casing**
-# (0.562 original, 0.554 lower-cased, 0.560 sentence-cased), so augmentation has nothing to fix (Δ lower-cased
-# −0.001 ± 0.017). DeBERTa's tokenizer handles capitals well enough. Augmentation is not adopted.
+# **E8 result.** Hypothesis rejected: the model is already robust to casing (0.562 original, 0.554 lower-cased,
+# 0.560 sentence-cased), so augmentation has nothing to fix (Δ lower-cased −0.001 ± 0.017). DeBERTa's tokeniser
+# handles capitals well enough. Augmentation is not adopted.
 

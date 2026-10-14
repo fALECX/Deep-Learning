@@ -288,7 +288,7 @@ display(pd.DataFrame({
 # * **The strongest general-purpose model is better than ours.** Gemini 3.1 Pro, zero-shot, scores micro-F1 0.574 ±
 #   0.007 over three runs and is significantly better on the same 200 memes (our −0.056, 95% CI −0.107 to −0.002). It
 #   is much better on rare techniques (macro-F1 0.44 vs. 0.22) and slightly better on spans (0.46 vs. 0.41). With
-#   the names-only prompt the gap is not significant. We report this as a finding, not a failure.
+#   the names-only prompt the gap is not significant.
 # * **Contamination is plausible but limited.** Pro reproduces 16% of the unseen second halves of memes, against 2% for
 #   the control, and more than half of the text for 12% of memes, mostly well-known slogans and quotes. It has seen
 #   these meme texts or their sources, so its test score is likely somewhat optimistic. The labels themselves are not
@@ -302,9 +302,9 @@ display(pd.DataFrame({
 # * **Cheap hosted models are worse than ours** (Flash-Lite 0.44, we are +0.09 better).
 #
 # **Why the department should pay for this system:** among the options that satisfy the privacy constraint, it is the
-# most accurate by a wide margin, it answers in 0.14 s, and it gives the same answer every time. The honest caveat:
-# a frontier model is better at the task, so the best use of it is *offline*, on public memes only, for example to
-# pre-label Australian training data that our local model then learns from.
+# most accurate by a wide margin, it answers in 0.14 s, and it gives the same answer every time. A frontier model is
+# still better at the task, so its best use is offline, on public memes only, for example to pre-label Australian
+# training data that our local model then learns from.
 #
 # **Limits of the comparison.** One provider gateway (grsai.ai) whose exact model build we cannot verify beyond the
 # reported `modelVersion`; temperature 1.0 as recommended; one prompt family; strict and lenient scoring coincide

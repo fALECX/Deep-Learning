@@ -1,25 +1,23 @@
 # %% [markdown]
 # ## 4. Experiments on the development pool (5-fold cross-validation)
 #
-# **Protocol.** Experiments run in a fixed order, and each one fixes one design dimension for the experiments after
-# it (greedy, coordinate-wise search). A full grid over all dimensions is out of reach (3 encoders × 3 adaptations ×
-# 4 architectures × … ≈ 500 configurations × 5 folds), and the dimensions are largely separable.
-#
-# Every experiment is stated **before** it runs:
-# * **H:** the hypothesis, i.e. what we expect.
+# **Protocol.** The experiments run in a fixed order, and each fixes one design dimension for the ones after it
+# (greedy, coordinate-wise search). A full grid is out of reach (3 encoders × 3 adaptations × 4 architectures × … ≈ 500
+# configurations × 5 folds), and the dimensions are largely separable. Each experiment states before it runs:
+# * **H:** the hypothesis, i.e. what we expect;
 # * **Decision rule:** how the result feeds the next step.
 #
 # **Selection score** = mean of out-of-fold label micro-F1 and span F1, each at its best global threshold. The tool
 # needs both outputs, so neither alone decides.
 #
-# **Tie rule:** a candidate replaces the current choice only if it wins on the selection score **and** its
-# fold-paired advantage is larger than the fold-to-fold standard deviation of that advantage. Otherwise we keep the
-# simpler or cheaper option. With 750 memes, differences of about one F1 point are within noise, so this rule
-# prevents "tuning on noise".
+# **Tie rule:** a candidate replaces the current choice only if it wins on the selection score and its fold-paired
+# advantage is larger than the fold-to-fold standard deviation of that advantage. Otherwise the simpler or cheaper
+# option is kept. With 750 memes, differences of about one F1 point are within noise, so this rule prevents tuning on
+# noise.
 #
-# **Robustness is measured in every run.** Each validation fold is also scored after lower-casing and after
-# sentence-casing the text (labels and offsets unchanged). This tells us how each choice behaves on text that does
-# not look like the 2020 corpus (E8, C4).
+# **Robustness check in every run.** Each validation fold is also scored after lower-casing and after sentence-casing
+# the text (labels and offsets unchanged). This shows how each choice behaves on text that looks different from the
+# 2020 corpus (E8, C4).
 
 # %%
 _TOKENIZERS = {}
@@ -143,8 +141,6 @@ print("→ chosen:", BEST)
 
 
 # %% [markdown]
-# <!-- E1-RESULT -->
-#
 # **E1 result.** DeBERTa-v3 wins on all five folds (paired +0.038 ± 0.033 on the selection score). The gain comes
 # mainly from span F1 (0.401 vs. 0.338 for RoBERTa). The tweet-pretrained RoBERTa did **not** help (−0.005 ± 0.016,
 # won 2/5 folds), so the hypothesis is rejected: pretraining text from the same era and register did not beat a

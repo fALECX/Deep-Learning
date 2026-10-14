@@ -2,8 +2,7 @@
 # ## 7. Ultimate judgement
 #
 # ### 7.1 The evidence in one table
-# Every number below is computed earlier in this notebook. They are collected here so the judgement can be checked
-# against them.
+# All numbers below are computed earlier in this notebook.
 
 # %%
 card = pd.Series({
@@ -85,8 +84,8 @@ display(card.to_frame())
 #
 # **Additional public data.** The Propaganda Techniques Corpus (SemEval-2020 Task 11; Da San Martino et al., 2020;
 # Zenodo record 3952415, CC-BY 4.0) was used in experiment E9 only. It contains news articles, not memes. No meme of
-# our corpus occurs in it (checked in E9), so it cannot contain the labels of our evaluation set. Whether it is part
-# of the final model is decided by E9 and printed there.
+# our corpus occurs in it (checked in E9), so it cannot contain the labels of our evaluation set. E9 found no gain,
+# so it is not part of the final model.
 #
 # **Zero-shot comparison (C2).** Responses were collected outside the notebook with `c2_llm/run_llm.py` and are
 # embedded above.

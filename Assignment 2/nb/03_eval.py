@@ -3,22 +3,20 @@
 #
 # ### 2.1 What we measure, and why
 # **Part A (labels).**
-# * **Micro-F1** is the official SemEval metric. Using it makes us comparable with the 2021 leaderboard
-#   (best .593, majority baseline .374).
-# * **Macro-F1** weights the 20 techniques equally. Didactically a missed *Straw man* matters as much as a missed
-#   *Loaded Language*, and macro-F1 exposes a model that ignores the tail.
-# * **Per-technique F1** tells the teacher *which* labels to trust.
+# * Micro-F1 is the official SemEval metric, so we are comparable with the 2021 leaderboard (best .593, majority
+#   baseline .374).
+# * Macro-F1 weights the 20 techniques equally. For teaching, a missed *Straw man* matters as much as a missed
+#   *Loaded Language*, and macro-F1 exposes a model that ignores the rare techniques.
+# * Per-technique F1 tells the teacher which labels to trust.
 #
-# Precision and recall are reported separately. In a classroom a false accusation ("this meme smears someone") is
-# more damaging than a missed technique, so we look at the precision side explicitly.
+# Precision and recall are reported separately. In a classroom a false accusation ("this meme smears someone") does
+# more damage than a missed technique, so precision gets explicit attention.
 #
 # **Part B (spans).** We use the official SemEval-2021 subtask-2 measure. It gives partial credit for character
-# overlap, and credit counts only when the technique matches. With predicted spans $p$ and gold spans $g$ of the
-# same technique,
+# overlap, and only when the technique matches. With predicted spans $p$ and gold spans $g$ of the same technique,
 # $P=\frac{1}{|\text{pred}|}\sum_{p}\sum_{g}\frac{|p\cap g|}{|p|}$ and
 # $R=\frac{1}{|\text{gold}|}\sum_{g}\sum_{p}\frac{|p\cap g|}{|g|}$. F1 is their harmonic mean.
-# We re-implement it in a few lines so it can run inside the training loop. Below we **verify it against the
-# official scorer** on the same inputs.
+# We re-implement it so it can run inside the training loop, and check it against the official scorer below.
 
 # %%
 def label_scores(Y_true: np.ndarray, Y_pred: np.ndarray) -> dict:
@@ -163,21 +161,19 @@ for name, pred in [("IO round-trip", roundtrip), ("shifted+dropped", perturbed)]
 
 # %% [markdown]
 # ### 2.3 Data splits
-# * **Test (200 memes, official split)** is held out and used **once**, in Section 5. Every choice before that
-#   (encoder, adaptation, head, loss, hyper-parameters, thresholds) is made on the development pool. Otherwise the
-#   test number would be optimistically biased, which is exactly the "leaky evaluation" that makes a deployment
-#   claim meaningless.
-# * The official dev set (63 memes) is too small to select models with. One meme changes micro-F1 by about 1 point,
-#   and several techniques have zero dev examples. We therefore pool train and dev (750 memes) and use
-#   **5-fold cross-validation**. Every model comparison is then made on 750 out-of-fold predictions instead of 63,
-#   and is **paired**: all configurations see identical folds, so we can compare them fold by fold.
-# * Folds are built with **iterative stratification** (Sechidis et al., 2011). It balances all 20 labels across folds
-#   at once, so rare techniques appear in every fold where possible. A random split could leave a fold with no
-#   example of a technique.
+# * **Test** (200 memes, official split) is held out and used once, in Section 5. Every choice before that (encoder,
+#   adaptation, head, loss, hyper-parameters, thresholds) is made on the development pool; otherwise the test number
+#   would be optimistically biased.
+# * The official dev set (63 memes) is too small for model selection: one meme changes micro-F1 by about 1 point, and
+#   several techniques have no dev example. We therefore pool train and dev (750 memes) and use 5-fold
+#   cross-validation. Model comparisons are then made on 750 out-of-fold predictions instead of 63, and they are
+#   paired: all configurations see identical folds.
+# * Folds are built with iterative stratification (Sechidis et al., 2011), which balances all 20 labels across folds
+#   at once, so rare techniques appear in every fold where possible.
 #
-# The test set is still in-distribution: same Facebook groups, same months, same annotators. The test score
-# therefore estimates performance *on 2020 US/Canadian Facebook memes*, not on an Australian Year 10 feed. That gap
-# is measured separately in C4 rather than assumed away.
+# The test set is still in-distribution (same Facebook groups, months and annotators). Its score estimates
+# performance on 2020 US/Canadian Facebook memes, not on an Australian Year 10 feed. That gap is measured separately
+# in C4.
 
 # %%
 def iterative_stratification(Y: np.ndarray, n_folds: int, seed: int = SEED) -> np.ndarray:

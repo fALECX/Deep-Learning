@@ -3,31 +3,36 @@
 #
 # ### 3.1 Architecture
 # ```
-#   meme text ──► pretrained encoder (frozen / LoRA / fully fine-tuned) ──► contextual token vectors H (T × d)
-#                                   ┌───────────────────────────────┴───────────────────────────────┐
-#               [self-built] LABEL HEAD (Part A)                              [self-built] SPAN HEAD (Part B)
-#    one learned query per technique attends over the tokens            per token: d → 256 → 20 sigmoids
-#    → 20 technique-specific summaries → 20 sigmoids                    ("is this token inside technique k?")
+# meme text
+#    │
+#    ▼
+# pretrained encoder (frozen / LoRA / fully fine-tuned)
+#    │  contextual token vectors H (T × d)
+#    ├────────────────────────────────┐
+#    ▼                                ▼
+# LABEL HEAD (Part A, self-built)     SPAN HEAD (Part B, self-built)
+# one learned query per technique     per token: d → 256 → 20 sigmoids
+# attends over the tokens             ("is this token inside technique k?")
+# → 20 summaries → 20 sigmoids
 # ```
 # **Why one shared encoder with two heads (multi-task)?**
-# * Only 750 training memes. Both tasks need the same competence, recognising persuasive language, so sharing the
-#   encoder lets each task regularise the other (Caruana, 1997). The span loss gives the encoder dense, token-level
-#   supervision about *which words* carry each label, which the meme-level label alone cannot provide.
-# * The data showed that a meme has a technique **iff** it has a span for it. One model keeps both outputs in
-#   one place, and the remaining disagreement can be measured (C3).
-# * Deployment: one encoder pass serves both outputs, which halves latency and memory on the school T4.
+# * There are only 750 training memes. Both tasks need the same skill, recognising persuasive language, so sharing
+#   the encoder lets each task regularise the other (Caruana, 1997). The span loss also tells the encoder which words
+#   carry each label, which the meme-level label alone cannot.
+# * The data showed that a meme has a technique iff it has a span for it. One model keeps both outputs together, and
+#   their remaining disagreement can be measured (C3).
+# * One encoder pass serves both outputs, which halves latency and memory on the school's T4.
 #
-# The alternatives (two separate models; deriving labels as "any token tagged") are tested in E3, not assumed away.
+# The alternatives (two separate models; labels derived as "any token tagged") are tested in E3.
 #
-# **Why technique-specific (label-wise) attention in the label head?** Section 1 showed that lexical techniques
-# live in 1–3 words while discourse techniques span the whole meme. A single `[CLS]` vector must summarise all of
-# them at once. Label-wise attention (as in CAML, Mullenbach et al., 2018) gives each technique its own query vector,
-# so *Name calling* can attend to the insult and *Whataboutism* to the "what about…" clause. A useful side effect:
-# the attention weights show which words the label head relied on, which feeds the explainability analysis and C3.
-# We compare it with `[CLS]` and mean pooling in E4.
+# **Why technique-specific (label-wise) attention in the label head?** Section 1 showed that lexical techniques sit in
+# a few words while discourse techniques span the whole meme. A single `[CLS]` vector must summarise all of them at
+# once. Label-wise attention (as in CAML, Mullenbach et al., 2018) gives each technique its own query vector, so *Name
+# calling* can attend to the insult and *Whataboutism* to the "what about…" clause. The attention weights also show
+# which words the head used (explainability, C3). E4 compares it with `[CLS]` and mean pooling.
 #
-# **The self-built segment** is both heads plus the joint loss below. They are designed, initialised and trained
-# from scratch, and their variants are tuned in Section 4.
+# **The self-built segment** is both heads plus the joint loss below. They are designed, initialised and trained from
+# scratch, and their variants are tuned in Section 4.
 
 # %%
 ENCODERS = {

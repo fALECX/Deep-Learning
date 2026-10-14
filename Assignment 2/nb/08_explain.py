@@ -73,8 +73,6 @@ plt.tight_layout(); plt.show()
 
 
 # %% [markdown]
-# <!-- IG-RESULT -->
-#
 # **Explainability result.** Overall, 45% of the positive attribution falls on gold-span tokens, against 42% for a
 # uniform spread. For short, lexical techniques the concentration is a little stronger (Loaded Language 0.28 vs.
 # 0.22), and for whole-message techniques the two are equal by construction. So the label head does **not** rely

@@ -118,8 +118,6 @@ print("→ chosen:", BEST)
 
 
 # %% [markdown]
-# <!-- E9-RESULT -->
-#
 # **E9 result.** PTC intermediate training does not help overall (−0.001 ± 0.014). Per technique the picture is
 # mixed: it helps several techniques that the PTC annotates (Loaded Language, Name calling, Flag-waving, Doubt,
 # Exaggeration, Fear) but hurts others (Appeal to authority, Repetition, Causal oversimplification). News prose seems

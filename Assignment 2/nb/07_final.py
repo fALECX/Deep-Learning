@@ -64,17 +64,15 @@ display(test_tab[["micro_f1", "micro_f1 95% CI", "macro_f1", "micro_p", "micro_r
 
 
 # %% [markdown]
-# <!-- TEST-RESULT -->
-#
 # **Test result.**
-# * Labels: **micro-F1 0.519 (95% CI 0.469–0.565)**, macro-F1 0.221. Precision 0.48, recall 0.57.
-# * Spans: **span F1 0.405 (95% CI 0.357–0.442)**.
+# * Labels: micro-F1 **0.519** (95% CI 0.469–0.565), macro-F1 0.221. Precision 0.48, recall 0.57.
+# * Spans: span F1 **0.405** (95% CI 0.357–0.442).
 # * This is clearly above the majority baseline (0.374, and 0.165 for spans). It is below the SemEval-2021 winner
 #   (0.593 / 0.482), which used PTC-pretrained ensembles that our rules forbid.
-# * It is **lower than the cross-validation estimate (0.562)**. Two reasons: the CV numbers were used to select the
-#   configuration and thresholds, so they are optimistic; and the test memes are harder for the tail techniques. This
-#   gap is the honest price of a clean protocol. **0.52 is the number to expect on memes like these.**
-# * The ensemble beats a single fold model (0.495 / 0.376), as intended.
+# * It is lower than the cross-validation estimate (0.562). The CV numbers were used to select the configuration and
+#   thresholds, so they are optimistic, and the test memes are harder for the rare techniques. 0.52 is the number to
+#   expect on memes like these.
+# * The ensemble beats a single fold model (0.495 / 0.376).
 
 # %% [markdown]
 # ### Per-technique behaviour
@@ -101,8 +99,6 @@ print("techniques with ≥", MIN_POS, "development examples:", [SHORT[t] for t i
 
 
 # %% [markdown]
-# <!-- PERTECH-RESULT -->
-#
 # **Reading.** Only a handful of techniques are usable: Loaded Language (F1 0.77), Name calling (0.57), Whataboutism
 # (0.50), Exaggeration (0.42), Smears (0.45) and Appeal to authority (0.53, but only 7 test examples). Slogans gets
 # F1 0 on test despite 47 development examples. All techniques with fewer than 10 development examples are never
@@ -134,8 +130,6 @@ plt.tight_layout(); plt.show()
 
 
 # %% [markdown]
-# <!-- CONF-RESULT -->
-#
 # **Reading.** The errors have a pattern. When the model misses a subtler technique (Slogans, Doubt, Exaggeration,
 # Fear), it usually predicts one of the three frequent "attack" techniques instead (Smears, Name calling, Loaded
 # Language). The model has learned that a meme is hostile, but not always *how* it argues.
@@ -204,8 +198,6 @@ print(f"device: {torch.cuda.get_device_name(0) if DEVICE.type == 'cuda' else 'CP
 
 
 # %% [markdown]
-# <!-- LATENCY-RESULT -->
-#
 # **Deployment fit.** Measured on a Tesla T4: one model answers in **28 ms**, the five-model ensemble in **142 ms**
 # per meme. The ensemble's weights take 1.85 GB in fp16. That is far inside a 16 GB T4 and instant from a
 # student's point of view. (The 7.6 GB peak includes the models kept in memory for the whole notebook.)
