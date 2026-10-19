@@ -81,6 +81,8 @@ $$
 
 <sub>$\text{score}_{ij}$ = how much token $i$ wants to look at token $j$. After the softmax, a score of $-\infty$ becomes a weight of exactly 0, so padding contributes nothing.</sub>
 
+**Simply put:** mask 1 = read this token. Mask 0 = ignore it, it is only filler.
+
 ![Each row is one query token](img/02_padding_mask.png)
 <sub>Each row is one query token. Columns of [PAD] get −∞, so after the softmax their weight is 0.</sub>
 
@@ -135,6 +137,8 @@ $$
 
 <sub>$\mathbf{o}_7$ = one-hot vector of token 7 · $E$ = embedding table, $V$ rows (one per token) and $d$ columns (for example 768) · $\mathbf{e}_7$ = row 7 of the table. Multiplying by a one-hot vector just picks one row, so in practice the layer is a fast lookup.</sub>
 
+**Simply put:** an embedding layer is a lookup table. Token ID 7 → row 7 → a list of numbers.
+
 - The values are learned. Words used in similar contexts end up with similar vectors.
 - Similarity is measured with the cosine similarity:
 
@@ -166,6 +170,8 @@ $$
 - A Transformer produces them (doc 04).
 - This is why pretrained Transformers beat averaged word2vec vectors on most tasks. The Week 9 notebook shows it directly: GloVe gives one vector for a word, BERT gives different vectors by context.
 
+**Simply put:** static = one fixed vector per word. Contextual = the vector changes with the sentence around the word.
+
 > [!NOTE]
 > **From the course · Week 9 tutorial, (a).** Legal emails: why is a contextual representation from a pretrained Transformer better than averaging word2vec/GloVe vectors?
 
@@ -194,6 +200,11 @@ $$
 - C4 measures how many sub-word pieces Australian slang needs compared to the 2020 memes. More pieces per word usually means less familiar text.
 
 ## Watch and read
+
+**Official course videos** (from the Canvas week pages; Canvas Studio links need your RMIT login). Watch these first: the exam is built on this material.
+- **Week 7 pre-recorded lectures** (sequence data, word embeddings, text classification): listed in [doc 03](03_sequences_and_rnns.md#watch-and-read).
+
+**More videos and readings:**
 
 - StatQuest, *Word embedding and word2vec, clearly explained*: https://www.youtube.com/watch?v=viZrOnJclY0
 - AssemblyAI, *A complete overview of word embeddings*: https://www.youtube.com/watch?v=5MaWmXwxFNQ

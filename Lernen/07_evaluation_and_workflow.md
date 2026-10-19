@@ -5,7 +5,7 @@
 
 **Why this matters.** A model is only as good as the evidence for it. Most mistakes in practice are not in the network. They are in the data split, the metric or the way results are compared. Both assignments and many exam case studies are graded on exactly this.
 
-**Course material:** Week 1 slides (`Week 1/W1_Lecture1_Part2_v2.pdf`): *Generalization*, *Under-fitting and Over-fitting*, *Hyperparameters and Validation Sets*, *Cross-Validation*, *ML Evaluation Framework*. Week 1 notebook (`Week 1/L1_Week1_MLBasics.ipynb`), especially *The Golden Rule of Data Splitting*. Week 2 notebook, *Managing Dataset Imbalance* and *Performance Measures*. Week 6 notebook (`Week 6/L6_Week6_IterativeWorkflow.ipynb`): Steps 1–4 and *Hyperparameter tuning*. Week 7 tutorial (`Week 7/COSC2779_Tute7_ans.pdf`) on splits, metrics and reading learning curves.
+**Course material:** Week 1 slides (`Week 1/W1_Lecture1_Part2_v2.pdf`): *Generalization*, *Under-fitting and Over-fitting*, *Hyperparameters and Validation Sets*, *Cross-Validation*, *ML Evaluation Framework*. Week 1 notebook (`Week 1/L1_Week1_MLBasics.ipynb`), especially *The Golden Rule of Data Splitting*. Week 2 notebook, *Managing Dataset Imbalance* and *Performance Measures*. Week 6 notebook (`Week 6/L6_Week6_IterativeWorkflow.ipynb`): Steps 1–4 and *Hyperparameter tuning*. Week 7 tutorial (`Week 7/COSC2779_Tute7_ans.pdf`) on splits, metrics and reading learning curves. Week 2 tutorial (`Week 2/COSC2779_Tute2_sol.pdf`): task/experience/performance, imbalance, validation for time series. Week 2 notebook, *SMOTE*. Week 11 lab (`Week 11/Lab11_Week11_RepresentationLearning.ipynb`), *Task 6.4 ROC curve*.
 
 
 > [!TIP]
@@ -17,6 +17,35 @@
 > - [MLU-Explain: double descent](https://mlu-explain.github.io/double-descent/): the modern twist on overfitting from the week 1 slides.
 
 ---
+
+## 0. What machine learning is (Week 1)
+
+**Definition (Tom Mitchell).** A program **learns** from experience **E** with respect to a task **T** and a performance measure **P**, if its performance at T, measured by P, improves with E.
+- **T, the task:** the unknown function we want, $y = f(x)$. For example "given today's weather data, predict tomorrow's".
+- **E, the experience:** the dataset of examples, $D = \{(x^{(i)}, y^{(i)})\}_{i=1}^{N}$ (<sub>$x^{(i)}$ = input of example $i$ · $y^{(i)}$ = its target · $N$ = number of examples</sub>).
+- **P, the performance measure:** a number that says how well the model does, for example accuracy or mean squared error, measured on data the model did not train on.
+
+The model is a **hypothesis** $h$ chosen from a **hypothesis space** $H$ (all functions the model could represent, for example all weight settings of one network). Learning means picking the $h$ in $H$ that best approximates $f$.
+
+**The four ingredients of almost every ML algorithm:** a dataset, a model (hypothesis space), a cost function, and an optimisation procedure. Change one ingredient and you get a different algorithm.
+
+**Three errors you must keep apart:**
+- **Training error:** measured on the data used for fitting.
+- **Generalisation (test) error:** measured on held-out data from the same distribution. It estimates the next one.
+- **True risk:** the expected error over all possible data. It cannot be observed; the test error estimates it.
+
+**Common problem types:** classification (which of $k$ categories?), regression (a number), anomaly detection (flag unusual events), synthesis and sampling (generate new examples, doc 11), denoising (clean a corrupted input), machine translation (sequence to sequence, doc 03/04).
+
+> [!NOTE]
+> **From the course · Week 2 tutorial, Q1 and Q2.** (1) A learning algorithm is fed historical weather data to predict the weather. What are T and P? (2) You predict tomorrow's price of a stock in dollars. Classification or regression?
+
+<details>
+<summary><b>Show the answer</b></summary>
+
+1. **T** = the weather prediction task. **P** = for example the probability (rate) of correctly predicting a future date's weather. (E = the historical weather data.)
+2. **Regression**: the target is a number on a continuous scale.
+
+</details>
 
 ## 1. The workflow (Week 6)
 
@@ -65,12 +94,36 @@ $$
 
 <sub>$s_f$ = score on fold $f$ · $\bar s$ = mean score · sd = standard deviation across folds, a measure of how noisy the estimate is.</sub>
 
+**Simply put:** take turns. Every part is the validation part once. Then average the results.
+
 ![5-fold cross-validation: five training runs, each with a different validation fold](img/07_kfold.png)
 <sub>5-fold cross-validation: five training runs, each with a different validation fold.</sub>
 
 **Stratification:** make every fold have the same class proportions. For multi-label data, simple stratification does not work. **Iterative stratification** (Sechidis et al., 2011) assigns the rarest label first, then the next rarest, so that each label is spread evenly.
 
 A2 uses 5-fold iterative stratification on 750 memes. The official 63-meme dev set is too small: one meme changes the F1 by about one point.
+
+**Group k-fold.** If several examples come from the same person, patient or recording session, put the whole group into one fold (see section 4, group leakage). scikit-learn calls this `GroupKFold`.
+
+**Time series need a different split.** Data points in a time series are ordered, not shuffled at random. A pattern from 2023 must not help predict 2019. Plain k-fold mixes past and future, so the model trains on the future and is tested on the past. Use **forward chaining** (an expanding window) instead:
+- fold 1: train on period 1, test on period 2;
+- fold 2: train on periods 1–2, test on period 3;
+- fold 3: train on periods 1–3, test on period 4; and so on.
+
+A **sliding window** (train only on the last $k$ periods) is another option when old data is no longer relevant.
+
+![Shuffled k-fold leaks the future; forward chaining always trains on the past](img/07_time_series_cv.png)
+<sub>Top: shuffled k-fold puts later years into training and earlier years into the test fold. Bottom: forward chaining tests every fold on the period right after its training data.</sub>
+
+> [!NOTE]
+> **From the course · Week 2 tutorial, Q8.** What validation technique would you use on a time series dataset?
+
+<details>
+<summary><b>Show the answer</b></summary>
+
+Not standard k-fold: a time series is ordered in time, and a shuffled split lets the model learn from the future. Use **forward chaining**: fold 1 trains on [1] and tests on [2], fold 2 trains on [1, 2] and tests on [3], fold 3 trains on [1, 2, 3] and tests on [4], and so on. A sliding window is another option.
+
+</details>
 
 ## 4. Data leakage
 
@@ -80,8 +133,15 @@ Leakage means information from the evaluation data gets into training. The resul
 - Computing normalisation statistics on **all** data instead of only training data.
 - **Information from the future** in time series.
 - Tuning on the test set (see the golden rule).
+- **Augmenting before splitting.** Two flipped copies of one image land in train and test. Split first, then augment the training part only.
+- **Group leakage:** the same **person, patient or recording session** appears in train and test.
 
 A sign of leakage: suspiciously good validation results, or validation loss far below training loss.
+
+**Group leakage in detail.** In Assignment 1, colleagues recorded the hand gestures. Each person performed many clips. A random split by clip puts clips of the same person into training and test. The model can then recognise the person (body shape, clothes, background, lighting) instead of the gesture. The test score looks great, but a new person at the delivery site gets much worse results. **Split by person:** all clips of a person go into exactly one split. The test people are then truly new, like the client's staff at the demo. The same rule holds for patients in medical data and speakers in audio.
+
+![Random split by clip vs split by person](img/07_group_split.png)
+<sub>Left: a random split by clip puts persons B and C into both training and test (and E into training and validation). Right: split by person, so validation and test people are never seen during training.</sub>
 
 ## 5. Metrics
 
@@ -105,6 +165,8 @@ F_1 = \frac{2 \cdot \text{P} \cdot \text{R}}{\text{P} + \text{R}}
 $$
 
 <sub>**Precision**: when the model says yes, how often is it right? · **Recall**: of all true cases, how many did it find? · **F1**: harmonic mean; it is high only if both are high. · **Accuracy** is misleading with imbalance: if 95% of emails are not spam, "never spam" scores 95%.</sub>
+
+**Simply put:** precision = when the model says yes, is it right? Recall = did it find all the real yeses? F1 = one number that is only high if both are high.
 
 **Worked example.** 10 memes truly use *Smears*. The model flags 8 memes, and 6 of them are correct.
 - TP = 6, FP = 2, FN = 4.
@@ -138,6 +200,26 @@ Example from A2: always predicting *Loaded Language* gives micro-F1 0.38 but mac
 2. **Per-class** precision/recall/F1 shows which classes work. A **confusion matrix** shows which classes are mixed up.
 
 </details>
+
+**ROC curve and AUC.** Most classifiers output a score, and you choose a threshold. Each threshold gives one pair of numbers:
+
+$$
+\text{TPR} = \frac{TP}{TP + FN} \qquad\qquad \text{FPR} = \frac{FP}{FP + TN}
+$$
+
+<sub>TPR = true positive rate, the same as recall: the share of true cases that are found · FPR = false positive rate: the share of true negatives that get a false alarm.</sub>
+
+The **ROC curve** plots TPR against FPR for every threshold, from very strict (bottom left, nothing flagged) to very loose (top right, everything flagged). The **AUC** (area under the curve) summarises it in one number:
+- AUC = 1.0: a perfect ranking. Every positive gets a higher score than every negative.
+- AUC = 0.5: no better than random guessing (the diagonal).
+- AUC is the probability that a random positive example gets a higher score than a random negative one.
+
+![ROC curves of a good and a weak model](img/07_roc.png)
+<sub>Each point on a curve is one threshold. The better the model, the closer its curve hugs the top-left corner and the larger the area under it.</sub>
+
+AUC does not depend on the threshold, so it is good for comparing models (Week 6 notebook uses `roc_auc_score`; the Week 11 lab plots the ROC curve of an anomaly detector). With strong class imbalance, the ROC can still look good while precision is poor, because FPR divides by the many negatives. Then also look at precision, recall and F1.
+
+**Cohen's kappa** (listed in the Week 2 tutorial) compares the accuracy with the accuracy you would get by chance from the class frequencies. 0 means "no better than chance", 1 means perfect agreement.
 
 **Choose the metric from the costs.** In a classroom, falsely accusing a meme of smearing someone is worse than missing a technique. So precision deserves extra attention there.
 
@@ -216,8 +298,32 @@ $$
 
 <sub>$p_t$ = predicted probability of the true class · $\gamma$ = focus strength (often 2). If the model is already sure ($p_t \approx 1$), the factor is ≈ 0, so easy examples barely count.</sub>
 
-- **Resampling:** show rare examples more often.
+- **Resampling:** show rare examples more often (**oversampling**) or drop some common examples (**undersampling**). Oversampling copies can be memorised; undersampling throws data away.
+- **Synthetic samples: SMOTE** (Week 2 notebook). For a minority example, pick one of its nearest minority neighbours and create a new point somewhere on the line between them:
+
+$$
+\textcolor{#3b82f6}{x_{\text{new}}} = \textcolor{#3b82f6}{x_i} + \textcolor{#a855f7}{\lambda}\,\big(\textcolor{#3b82f6}{x_{\text{nn}}} - \textcolor{#3b82f6}{x_i}\big), \qquad \textcolor{#a855f7}{\lambda} \in [0, 1] \text{ random}
+$$
+
+<sub>$x_i$ = a minority example (a feature vector) · $x_{\text{nn}}$ = one of its nearest neighbours from the same minority class · $\lambda$ = a random number between 0 and 1, so $x_{\text{new}}$ lies somewhere between the two. (This $\lambda$ has nothing to do with the regularisation $\lambda$ in doc 01.)</sub>
+
+![SMOTE creates new minority points between existing ones](img/07_smote.png)
+<sub>SMOTE: each purple star lies on a line between a red minority example and one of its minority neighbours.</sub>
+
+SMOTE works for tabular features. For images, use data augmentation instead. Apply it to the **training** split only.
 - **Tune the thresholds.**
+- **Collect more data** of the rare class, if at all possible.
+- **Treat it as anomaly detection** when the rare class is extremely rare: model only the normal class and flag what does not fit (doc 11, autoencoders).
+
+> [!NOTE]
+> **From the course · Week 2 tutorial, Q7.** 286 patients, 201 without and 85 with recurrence of breast cancer. How would you handle the imbalance?
+
+<details>
+<summary><b>Show the answer</b></summary>
+
+About 70% of the data is in one class, so accuracy can look good while the model has no power on the other class. Options: collect more data; choose suitable metrics (confusion matrix, precision, recall, F1, kappa, ROC); resample (over- or undersampling); generate synthetic samples (SMOTE); use a penalised (weighted) loss that makes errors on the minority class cost more; or treat it as anomaly detection. The key is to recognise what damage the imbalance does and to counter it.
+
+</details>
 
 ## 10. Common mistakes
 
@@ -226,6 +332,10 @@ $$
 - Reporting only micro-F1 when rare classes matter.
 - Declaring a winner from a difference smaller than the seed-to-seed noise.
 - Forgetting that in-distribution test data does not prove the model works in a new setting.
+- Splitting clips or images of the **same person** randomly into train and test (group leakage).
+- Using shuffled k-fold on **time series**. Use forward chaining.
+- Applying SMOTE or augmentation **before** splitting.
+- Reading AUC = 0.9 as "90% accuracy". AUC is a ranking quality, not an accuracy.
 
 ## 11. How this appears in A2
 
@@ -237,13 +347,23 @@ $$
 
 ## Watch and read
 
+**Official course videos** (from the Canvas week pages; Canvas Studio links need your RMIT login). Watch these first: the exam is built on this material.
+- **Week 1 pre-recorded lectures** (introduction to deep learning, review of machine-learning fundamentals): [part 1](https://rmit-arc.instructuremedia.com/embed/6463473d-55e6-4550-857f-418a7e386cc3)
+- Week 1: Bloomberg Originals, *This Canadian genius created modern AI* (Geoffrey Hinton, background story): https://www.youtube.com/watch?v=l9RWTMNnvi4
+- **Week 6 pre-recorded lectures** (practical methodology and hyperparameter tuning): [part 1](https://rmit-arc.instructuremedia.com/embed/a44485d6-a91a-4856-a0b5-a5415beb2744) · [part 2](https://rmit-arc.instructuremedia.com/embed/db995f45-2bed-4958-828a-8aa422b8d5fb) · [part 3](https://rmit-arc.instructuremedia.com/embed/6e666542-504a-4064-9bef-b44c6a8d9fdb)
+
+**More videos and readings:**
+
 - StatQuest, *Cross validation*: https://www.youtube.com/watch?v=fSytzGwwBVw
 - StatQuest, *Bias and variance*: https://www.youtube.com/watch?v=EuBBz3bI-aA
 - StatQuest, *Regularization part 1: Ridge (L2)*: https://www.youtube.com/watch?v=Q81RR3yKn30
 - Google ML crash course, *Accuracy, precision, recall*: https://developers.google.com/machine-learning/crash-course/classification/precision-and-recall
 - Google ML crash course, *Thresholds and the confusion matrix*: https://developers.google.com/machine-learning/crash-course/classification/thresholding
 - Google ML crash course, *Overfitting*: https://developers.google.com/machine-learning/crash-course/overfitting/overfitting
-- scikit-learn guide, *Cross-validation* (clear diagrams): https://scikit-learn.org/stable/modules/cross_validation.html
+- scikit-learn guide, *Cross-validation* (clear diagrams, including `GroupKFold` and `TimeSeriesSplit`): https://scikit-learn.org/stable/modules/cross_validation.html
+- Google ML crash course, *ROC and AUC*: https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc
+- MLU-Explain, *ROC and AUC* (interactive): https://mlu-explain.github.io/roc-auc/
+- SMOTE paper (Chawla et al., 2002): https://arxiv.org/abs/1106.1813
 - Goodfellow, Bengio, Courville, *Deep Learning*, chapter 11 *Practical methodology* (free online): https://www.deeplearningbook.org/
 
 ---
@@ -251,16 +371,19 @@ $$
 ## Cheat sheet
 
 > [!IMPORTANT]
-> **The 9 things to remember**
+> **The 12 things to remember**
+> 0. ML = improve at task **T**, measured by **P**, with experience **E**. Ingredients: data, model, cost, optimiser.
 > 1. Workflow: **goal + metric → baseline → instrument → read curves → change one thing → test once.**
 > 2. Train = fit, validation = choose, **test = once**. Val/test must look like deployment.
-> 3. Small data → **k-fold CV**; multi-label → iterative stratification.
-> 4. Leakage: duplicates, near-duplicates, global normalisation, future info, tuning on test.
+> 3. Small data → **k-fold CV**; multi-label → iterative stratification; groups → **group k-fold**; time series → **forward chaining**.
+> 4. Leakage: duplicates, near-duplicates, global normalisation, future info, tuning on test, **same person in train and test**, augmenting before splitting.
 > 5. P = TP/(TP+FP), R = TP/(TP+FN), F1 = 2PR/(P+R). Accuracy lies under imbalance.
 > 6. **Micro** = pool counts (frequent classes rule). **Macro** = average per class (rare classes count).
 > 7. Curves: both bad → underfit; big gap → overfit; zig-zag → LR too high; val < train → regularisation, timing, easier val, or leakage.
 > 8. Compare **paired** on the same folds; a win must beat the noise. Report bootstrap CIs.
-> 9. Imbalance: weighted BCE ($\alpha_1$ up for rare positives), focal loss, resampling, tuned thresholds.
+> 9. Imbalance: weighted BCE ($\alpha_1$ up for rare positives), focal loss, resampling, SMOTE, tuned thresholds, more data, anomaly detection.
+> 10. **ROC** = TPR vs FPR over all thresholds; **AUC** 0.5 = random, 1.0 = perfect ranking; threshold-free.
+> 11. SMOTE: $x_{\text{new}} = x_i + \lambda(x_{\text{nn}} - x_i)$, training split only.
 
 > [!TIP]
 > **Memory hooks**
@@ -275,3 +398,5 @@ $$
 > - **Compute** P, R and F1 for: 20 true cases, 25 flagged, 15 correct. (P = 0.60, R = 0.75, F1 = 0.67.)
 > - **Sketch the four learning-curve shapes** from section 6 and write the diagnosis under each.
 > - **Find the leak:** list three ways a time-series model could see the future by accident.
+> - **Draw forward chaining** for 5 years of data, with 4 folds.
+> - **Explain in 3 sentences** why gesture clips must be split by person, as for an exam answer.

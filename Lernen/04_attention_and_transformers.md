@@ -49,6 +49,8 @@ $$
 
 <sub>$Q, K, V$ = all queries, keys and values as matrices (one row per token) · $QK^\top$ = every query dotted with every key, an $n \times n$ table of scores · $d_k$ = length of each key vector · softmax is applied row by row, so each token's weights sum to 1 · multiplying by $V$ mixes the value vectors with those weights.</sub>
 
+**Simply put:** every word looks at every other word, decides how much it cares about each one, and takes a weighted average of them.
+
 ![The full computation of one attention layer, left to right](img/04_qkv_flow.png)
 <sub>The full computation of one attention layer, left to right.</sub>
 
@@ -109,6 +111,8 @@ $$
 
 <sub>$pos$ = position of the token in the sentence · $i$ = index of the dimension · $d$ = embedding size. Each dimension is a wave with its own frequency, so every position gets a unique pattern, and nearby positions get similar patterns.</sub>
 
+**Simply put:** attention cannot see order. So we stamp every word with its position before it goes in.
+
 ![Rows = positions, columns = dimensions](img/04_positional_encoding.png)
 <sub>Rows = positions, columns = dimensions. Left columns change fast with position, right columns slowly.</sub>
 
@@ -138,6 +142,8 @@ $$
 $$
 
 <sub>$\mathbf{x} + \ldots$ = residual connection: the input is added back, so gradients flow easily through many blocks · LayerNorm = rescales each token vector to a stable range · FFN = small two-layer network applied to each token separately.</sub>
+
+**Simply put:** residual connection = add the input back onto the output (keep what you had, add the change). LayerNorm = rescale the numbers so they do not drift. FFN = a small normal network applied to every token on its own.
 
 ![One encoder block](img/04_encoder_block.png)
 <sub>One encoder block. The dashed green lines are the residual connections.</sub>
@@ -233,6 +239,13 @@ The catch: ViT has little built-in knowledge about images. CNNs assume local pat
 - The zero-shot competitors in C2 (Gemini, Ornith) are decoder-only models.
 
 ## Watch and read
+
+**Official course videos** (from the Canvas week pages; Canvas Studio links need your RMIT login). Watch these first: the exam is built on this material.
+- Week 8: ByteByteGo, *Transformers step-by-step explained (Attention is all you need)*: https://www.youtube.com/watch?v=avjX3QrYkls
+- Week 8: Ari Seff, *What are Transformer neural networks?*: https://www.youtube.com/watch?v=XSSTuhyAmnI
+- Week 8: The AI Hacker, *Illustrated guide to Transformers neural network*: https://www.youtube.com/watch?v=4Bdc55j80l8
+
+**More videos and readings:**
 
 - 3Blue1Brown, *Transformers, the tech behind LLMs*: https://www.youtube.com/watch?v=wjZofJX0v4M
 - 3Blue1Brown, *Attention in transformers, step-by-step*: https://www.youtube.com/watch?v=eMlx5fFNoYc

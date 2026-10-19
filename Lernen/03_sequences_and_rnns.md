@@ -63,6 +63,8 @@ $$
 
 <sub>$\mathbf{x}_t$ = input at step $t$ (for example a word embedding) · $\mathbf{h}_{t-1}$ = memory from the previous step · $W_h$ = how the old memory is mixed in · $W_x$ = how the new input is mixed in · $\tanh$ squashes values to −1…1 · $\hat{\mathbf{y}}_t$ = optional output at step $t$.</sub>
 
+**Simply put:** read one word, update the memory. Read the next word, update again. Same weights every time.
+
 Key point: **the same weights $W_h$, $W_x$ are used at every step.** This is parameter sharing over time.
 - The model works for any sequence length.
 - The number of weights does not grow with the length.
@@ -88,6 +90,8 @@ $$
 $$
 
 <sub>$T$ = length of the sequence · $\prod$ = product of $T-1$ factors · $\tanh'$ = derivative of tanh, never above 1. Many factors below 1 shrink the product; many above 1 blow it up.</sub>
+
+**Simply put:** multiply many numbers below 1 and you get almost 0. Multiply many numbers above 1 and you get a huge number.
 
 - Factors mostly smaller than 1 → the product shrinks towards 0. This is the **vanishing gradient**. Early words get almost no learning signal. The RNN cannot learn long-range dependencies.
 - Factors mostly larger than 1 → the product grows without bound. This is the **exploding gradient**. Training becomes unstable and the loss may turn into NaN.
@@ -119,6 +123,8 @@ $$
 $$
 
 <sub>$\sigma$ = sigmoid, gives values 0…1 · $[\mathbf{h}_{t-1}, \mathbf{x}_t]$ = the old state and the new input glued together · $\odot$ = element-wise multiplication · $\mathbf{f}_t$ = what to keep from the old cell · $\mathbf{i}_t$ = how much new information to write · $\tilde{\mathbf{c}}_t$ = the new information itself · $\mathbf{o}_t$ = what to show as output.</sub>
+
+**Simply put:** a gate is a dimmer between 0 (block everything) and 1 (let everything through). Forget gate: what to delete from memory. Input gate: what to write into it. Output gate: what to show.
 
 ![The cell state runs along the top like a conveyor belt](img/03_lstm.png)
 <sub>The cell state runs along the top like a conveyor belt. Gates (purple) only scale or add to it.</sub>
@@ -215,9 +221,15 @@ A2 uses Transformers, not RNNs. But the task shapes come from this chapter:
 
 ## Watch and read
 
+**Official course videos** (from the Canvas week pages; Canvas Studio links need your RMIT login). Watch these first: the exam is built on this material.
+- **Week 7 pre-recorded lectures** (sequential data, RNNs and LSTMs, word embeddings, applications): [part 1](https://rmit-arc.instructuremedia.com/embed/10cedbbc-b3e7-42a1-9852-60f254bb9168) · [part 2](https://rmit-arc.instructuremedia.com/embed/e54c86b0-425a-493e-8b29-bece225df1dd)
+- Week 7: The AI Hacker, *Illustrated guide to recurrent neural networks*: https://www.youtube.com/watch?v=LHXXI4-IEns
+- Week 7: The AI Hacker, *Illustrated guide to LSTMs and GRUs* (the Week 7 before-class video): https://www.youtube.com/watch?v=8HyCNIVRbSU
+
+**More videos and readings:**
+
 - StatQuest, *Recurrent neural networks, clearly explained*: https://www.youtube.com/watch?v=AsNTP8Kwu80
 - StatQuest, *Long short-term memory (LSTM), clearly explained*: https://www.youtube.com/watch?v=YCzL96nL7j0
-- The AI Hacker, *Illustrated guide to recurrent neural networks*: https://www.youtube.com/watch?v=LHXXI4-IEns
 - DeepLearningAI (Andrew Ng), *Vanishing/exploding gradients*: https://www.youtube.com/watch?v=qhXZsFVxGKo
 - StatQuest, *Sequence-to-sequence encoder-decoder networks*: https://www.youtube.com/watch?v=L8HKweZIOmg
 - Chris Olah, *Understanding LSTM networks* (the classic diagrams): https://colah.github.io/posts/2015-08-Understanding-LSTMs/

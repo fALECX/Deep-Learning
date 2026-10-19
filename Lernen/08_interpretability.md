@@ -5,7 +5,7 @@
 
 **The problem.** A deep network makes a prediction, but it does not say why. In high-stakes settings (medicine, schools, law) people must be able to check the reasoning. Explanations also catch bugs: a model can be right for the wrong reason.
 
-**Course material:** Week 11 slides (`Week 11/main_week11_interpretability.pdf`), the whole deck. Week 11 notebook (`Week 11/L11_Week11_Interpretability.ipynb`): *Perturbation methods* (leave-one-out, LIME, SHAP, KernelSHAP), *Gradient methods*, *Transformer-specific methods*, *Which explanations are faithful?*, *When "removing" is out-of-distribution*. Week 11 tutorial (`Week 11/COSC2779_Tute11_QA.pdf`). Week 12 lab (`Week 12/Lab12_Week12_Explainability.ipynb`): Grad-CAM, bias, attention, counterfactuals.
+**Course material:** Week 11 slides (`Week 11/main_week11_interpretability.pdf`), the whole deck. Week 11 notebook (`Week 11/L11_Week11_Interpretability.ipynb`): *Perturbation methods* (leave-one-out, LIME, SHAP, KernelSHAP), *Gradient methods*, *Transformer-specific methods*, *Which explanations are faithful?*, *When "removing" is out-of-distribution*. Week 11 tutorial (`Week 11/COSC2779_Tute11_QA.pdf`). Week 12 lab (`Week 12/Lab12_Week12_Explainability.ipynb`): Grad-CAM, bias, attention, counterfactuals. PCA and t-SNE of learned features: Week 6 notebook (*Analysis*), Week 10 lab (*Task 3.5*), Week 11 lab (*Part 5 Latent space analysis*).
 
 
 > [!TIP]
@@ -33,9 +33,28 @@
 
 ## 3. Feature visualisation (mostly for CNNs)
 
-- **Visualise filters** of the first layer: they look like edge and colour detectors.
-- **Visualise activations:** which inputs make a neuron fire strongly.
-- **Gradient ascent on the input:** start from noise and change the image to maximise one neuron or class. The result shows what the unit "looks for".
+Feature visualisation asks: *what has the network learned?* It is a **global** view.
+
+- **Visualise filters** of the first layer: they look like edge and colour detectors (for example the 64 filters of 7 × 7 × 3 in ResNet-50). Filters of middle layers are hard to read.
+- **Visualise activations:** pass one image through and plot the output channels of a middle layer. Looking at one channel over many images shows what it reacts to.
+- **Gradient ascent on the input:** start from noise and change the image to maximise one neuron or class:
+
+$$
+I^{*} = \arg\max_{I}\; f_{l,c}(I) - \textcolor{#a855f7}{\lambda}\,R(I)
+$$
+
+<sub>$I$ = an input image · $f_{l,c}(I)$ = activation of channel $c$ in layer $l$ for that image · $R(I)$ = a penalty that keeps the image natural (for example smooth) · $\lambda$ = its weight · $\arg\max_I$ = "the image $I$ that makes this largest". Repeat: forward pass, backpropagate to the **pixels** (the weights stay fixed), update the pixels.</sub>
+
+- **Map the last layer's features in 2-D** with PCA or t-SNE. If the classes form separate clusters, the features separate them well.
+
+**PCA vs t-SNE.** Both squeeze many numbers per example into two, so you can plot them.
+- **PCA** is linear. It keeps the directions with the largest spread. Distances are meaningful, but curved structure gets squashed.
+- **t-SNE** is non-linear. It keeps **neighbours** together. Clusters show up clearly. But distances *between* clusters and cluster sizes mean little, and the picture changes with its settings (perplexity, random seed).
+
+![PCA vs t-SNE of 1,797 handwritten digits](img/08_tsne.png)
+<sub>The same 64-number digit images in 2-D. PCA mixes several digits; t-SNE separates them into clean islands. Neither method used the labels; the colours were added afterwards.</sub>
+
+**Pros and cons (Week 11 slides).** Feature visualisation gives unique insight: networks learn simple edge and texture detectors first and more abstract part and object detectors in higher layers. It also helps explain networks to non-experts. But many visualisations are not interpretable at all, there are far too many units to look at, and a pretty picture can give an *illusion* of understanding.
 
 ## 4. Attribution methods: which parts of the input mattered?
 
@@ -73,17 +92,27 @@ $$
 
 <sub>$\partial f / \partial x_i$ = how much the score would change if feature $i$ changed a little.</sub>
 
+**Simply put:** change each input a tiny bit and see how much the score moves. Big move = important input.
+
+For images, the slides take the absolute value of the gradient and the maximum over the three colour channels, which gives one heatmap value per pixel. One backward pass is enough, so it is cheap.
+
+**Sanity check (Week 11 slides):** compute the saliency map also for a network with **random** weights. If it looks almost the same, the map shows edges of the image, not what the trained model uses.
+
 **Weakness: saturation.** When the model is very confident, the output curve is flat (the sigmoid or softmax is saturated). Then the gradients are close to zero, even for very important inputs. The explanation looks empty exactly when the model is most sure.
 
 ### 4.3 CAM and Grad-CAM (CNNs)
 
-Grad-CAM takes the feature maps $A^k$ of the last convolutional layer and weights each by its average gradient:
+**CAM (class activation maps).** Modern CNNs such as ResNet and GoogLeNet end with: last conv layer → global average pooling → one linear layer. Each feature map is like an "attribute detector" (for example "dog face"), and it still knows *where* the attribute is. The linear layer's weight for class $c$ says how important each attribute is. So CAM = the feature maps, weighted by the class's linear weights, summed. It only works for this GAP + linear architecture.
+
+**Grad-CAM** generalises CAM to any CNN. It takes the feature maps $A^k$ of the last convolutional layer and weights each by its average gradient:
 
 $$
 \alpha_k^{c} = \frac{1}{Z}\sum_{i,j}\frac{\partial y^c}{\partial A^k_{ij}}, \qquad \text{Grad-CAM}^c = \text{ReLU}\Big(\sum_k \alpha_k^c\,A^k\Big)
 $$
 
 <sub>$A^k$ = feature map number $k$ · $y^c$ = score of class $c$ · $\alpha_k^c$ = importance of map $k$ for class $c$ (gradient averaged over all $Z$ positions) · ReLU keeps only the parts that push towards class $c$. The result is a coarse heatmap over the image.</sub>
+
+**Simply put:** the gradient says which feature maps matter for this class. The feature maps say where in the image they fire. Weight, add up, keep the positive part, and lay it over the image.
 
 - Needs access to feature maps and gradients. It does not work with a black-box API.
 - Shows *where* the model looked, at low resolution.
@@ -97,6 +126,8 @@ $$
 $$
 
 <sub>$x$ = real input · $x'$ = baseline, a "neutral" input (black image; for text all tokens replaced by [PAD]) · $\alpha$ runs from 0 (baseline) to 1 (real input) · the integral averages the gradient along that path. In practice it is a sum over about 32 steps.</sub>
+
+**Simply put:** fade the input in from "nothing" (the baseline) to the real input. Add up how much the score rose because of each feature along the way.
 
 ![Left: on the flat part of the curve the gradient is almost 0, even though the input matters](img/08_saturation_ig.png)
 <sub>Left: on the flat part of the curve the gradient is almost 0, even though the input matters. Right: IG walks from the baseline to the input and collects the gradient (orange) on the way, where the curve is steep.</sub>
@@ -141,6 +172,8 @@ $$
 
 <sub>$z$ = which parts are switched on · $f(z)$ = black-box prediction · $\pi(z)$ = closeness to the original input · $\mathbf{w}$ = one weight per part, the explanation.</sub>
 
+**Simply put:** switch parts of the input off at random, watch how the prediction changes, and fit a simple model that copies the big model near this one example.
+
 Strengths: works with any model, including an API. Weaknesses: results can change between runs, and the perturbed inputs can be unrealistic.
 
 ### 4.6 SHAP and Shapley values (model-agnostic)
@@ -152,6 +185,8 @@ $$
 $$
 
 <sub>$N$ = all features · $S$ = a subset of the other features · $v(S)$ = model output when only the features in $S$ are present · $v(S \cup \{i\}) - v(S)$ = what feature $i$ adds to $S$ · the fraction weights each subset so that every order of adding features counts equally.</sub>
+
+**Simply put:** split the prediction fairly among the features, like splitting a team bonus by how much each player added on average.
 
 **Worked example with two parts, A and B:**
 
@@ -195,6 +230,20 @@ Exact Shapley values need all $2^n$ subsets, which is too slow for many features
   - **Test-time intervention:** an expert can correct a wrong concept, and the prediction updates.
   - Limits: needs concept labels for all training data; the concept list may be incomplete; soft concept scores can leak extra information.
 
+TCAV is **post-hoc** (it asks a trained model "do you use concept c?"). A CBM is **interpretable by design** (the concepts are built into the model).
+
+> [!NOTE]
+> **From the course · Week 11 tutorial, (f).** Dermatologists want a model that reasons with the 7-point checklist (pigment network, streaks, blue-whitish veil, …) and that they can correct. Propose an interpretable-by-design model: its structure, how a clinician intervenes, and one limitation.
+
+<details>
+<summary><b>Show the answer</b></summary>
+
+A **concept bottleneck model**. Stage 1, $g$: image → predicted concept scores $\hat c$ (one per checklist feature). Stage 2, $f$: concepts → diagnosis, $\hat y = f(g(x))$. The prediction depends on the image only through the concepts, so the concept layer *is* the explanation. **Intervention:** if the clinician sees a wrong concept (for example "no streaks" although streaks are present), they overwrite that value and $f$ recomputes the diagnosis. **Limitations:** every training image needs concept labels (expensive expert work); the concept set may be incomplete and cost accuracy; soft concept scores can leak extra information, so the concepts may not tell the whole story.
+
+<sub>$x$ = the image · $g$ = the first network (image → concepts) · $\hat c$ = predicted concept scores · $f$ = the second model (concepts → diagnosis) · $\hat y$ = predicted diagnosis.</sub>
+
+</details>
+
 ## 6. Explaining Transformers
 
 **Raw attention weights** show where information flows in one layer and one head. They are **not** a full explanation:
@@ -202,26 +251,130 @@ Exact Shapley values need all $2^n$ subsets, which is too slow for many features
 - There are many heads and many layers.
 - Very different attention patterns can lead to the same prediction ("attention is not explanation").
 
+The debate has a second half: **"Attention is not *not* explanation"** (Wiegreffe and Pinter, 2019). The very different attention patterns were found adversarially, and a model trained with them may behave differently. Practical take-away from the slides: attention shows where information **flows**, not how much it **mattered**. Treat raw attention as a hint and verify it with gradients or perturbations.
+
 Better options:
-- **Attention rollout:** combine attention across all layers, including the residual paths.
-- **Gradient-weighted attention** (Chefer et al.): weight attention by its gradient, which makes it class-specific.
-- **Integrated Gradients, LIME or SHAP over tokens.**
-- **Probing:** train a small classifier on a layer's vectors to test what that layer encodes.
+- **Integrated Gradients, LIME or SHAP over tokens** (sections 4.4–4.6). For text, gradients are taken with respect to the token **embeddings**, because tokens themselves are discrete. Typical IG baselines: all-zero embeddings, or every token replaced by [PAD] or [MASK].
+- **Attention rollout** and **gradient-weighted attention**, below.
+- **Probing**, the **logit lens** and **mechanistic tools**, below.
+
+### 6.1 Attention rollout
+
+After layer 1, every position is already a mixture of all tokens. So one layer's attention says little about the *input* tokens. Rollout follows the flow back through **all** layers (Abnar and Zuidema, 2020):
+
+$$
+\hat{A}^{(l)} = \tfrac{1}{2}\big(\bar{A}^{(l)} + I\big), \qquad \tilde{A} = \hat{A}^{(L)}\,\hat{A}^{(L-1)} \cdots \hat{A}^{(1)}
+$$
+
+<sub>$\bar A^{(l)}$ = attention matrix of layer $l$, averaged over its heads (row $i$ = how much token $i$ attends to each token) · $I$ = identity matrix; adding it accounts for the residual connection, which passes each token's own vector straight on · $\tfrac12$ = mix both equally (rows are re-normalised to sum to 1) · $L$ = number of layers · $\tilde A$ = the product through all layers. The **[CLS] row** of $\tilde A$ says how much each input token flowed into the classification token.</sub>
+
+![Attention rollout vs raw last-layer attention](img/08_rollout.png)
+<sub>A made-up 3-layer example for "not bad film". The last layer alone suggests that [CLS] looks almost only at "film" (0.60). Following the flow through all layers (rollout) shows that "not" and "bad" also reached [CLS] (0.19 and 0.24).</sub>
+
+Rollout is **class-agnostic**: it gives the same map whichever class you ask about.
+
+### 6.2 Gradient-weighted attention (Chefer et al., 2021)
+
+Weight each attention map by its gradient towards the target class, keep only the positive part, average over heads, and propagate through the layers like rollout. It is the **Grad-CAM idea applied to attention**: feature map ↔ attention map, gradient weights ↔ gradient of attention. It is **class-specific** (different maps for "cat" and "dog"), works for ViT patches too, and is defined for text–image attention.
+
+### 6.3 What do the layers know? Probing and the logit lens
+
+- **Probing classifiers:** freeze the model and train a small (usually linear) classifier on one layer's vectors to predict a property: part of speech, syntax depth, sentiment. High probe accuracy means the information is **linearly decodable** at that layer. Classic finding: lower layers encode surface and syntax, higher layers more meaning. **Caveat: decodable ≠ used.** The model may hold information that it never uses for its prediction.
+- **Logit lens:** in a language model, apply the final output layer (the "unembedding") to an **intermediate** layer's hidden state. You read off "what the model would predict if it stopped here", and watch the answer form layer by layer. For example, the correct next word often appears only in later layers.
+
+Both are **global** tools: they describe what the network represents, not why one particular output happened.
+
+### 6.4 A taste of mechanistic interpretability
+
+**Goal:** reverse-engineer the algorithm inside the network: not only where it looks, but what it computes.
+- **Circuits:** small sub-networks of heads and neurons that implement one behaviour. Example: **induction heads** (Olsson et al., 2022) copy patterns of the form "A B … A → B". They are one mechanism behind in-context learning (doc 05).
+- **Sparse autoencoders (SAEs):** single neurons are often **polysemantic** (they fire for several unrelated things). An SAE trained on the activations finds directions that are more interpretable ("DNA sequences", "legal text").
+- **Activation patching (causal tracing):**
+  1. Run a clean input and a corrupted input.
+  2. Copy one component's activation from the clean run into the corrupted run.
+  3. If the correct output comes back, that component is causally important.
+
+![Activation patching](img/08_activation_patching.png)
+<sub>Activation patching. Copying layer 3's activation from the clean run into the corrupted run tests whether layer 3 carries the fact "Eiffel Tower → Paris".</sub>
+
+Patching is an **intervention**, not a correlation. That makes it the strongest evidence for faithfulness.
+
+### 6.5 Choosing a method for Transformers
+
+| Method | Needs weights? | Class-specific? | Cost | Main caveat |
+|---|---|---|---|---|
+| Raw attention | yes | no | 1 pass | flow, not importance |
+| Attention rollout | yes | no | 1 pass | same map for every class |
+| Leave-one-out / LIME / SHAP | no | yes | many passes | slow; LOO misses interactions |
+| Integrated Gradients | yes | yes | 20–300 passes | choice of baseline |
+| Gradient-weighted attention | yes | yes | 1 forward + 1 backward | heuristic combination |
+| Probing / logit lens | yes | — | cheap | decodable ≠ used |
+| Activation patching | yes | yes | many passes | needs clean/corrupted pairs |
+
+- Local question ("why this prediction?"): IG, gradient-weighted attention, or LIME/SHAP.
+- Global question ("what has the model learned?"): probing, logit lens, mechanistic tools.
+- Always sanity-check: delete the top tokens. Does the prediction actually change?
 
 **Self-explanations of LLMs** ("I chose this because…") are generated text. They sound plausible but are not guaranteed to describe what the model actually used. Plausible is not the same as faithful.
 
 > [!NOTE]
-> **From the course · Week 11 tutorial, (g) and (i).** (1) A colleague shows attention weights as the explanation of a text classifier. Justified? (2) A vision–language model writes a fluent explanation of its own decision. Is that an explanation for free?
+> **From the course · Week 11 tutorial, (g).** A colleague shows attention weights as the explanation of why a referral letter was flagged urgent. Justified? Suggest better alternatives.
 
 <details>
 <summary><b>Show the answer</b></summary>
 
-1. Only partly. Attention shows where information flows, not how much each token mattered; it ignores values, residuals and feed-forward layers. Better: attention rollout, gradient-weighted attention, IG or SHAP over tokens.
-2. No. It is generated text, optimised to sound right. **Plausible is not faithful**; treat it as a claim and test it (with open weights you can check it with IG or relevance maps).
+Only partly. Attention shows where information flows, not how much each token mattered; it ignores values, residual connections and feed-forward layers; one head or layer is only part of the picture; and very different attention patterns can give the same prediction. Better: attention rollout (all layers, with residuals), gradient-weighted attention (class-specific), or IG / SHAP / LIME over tokens.
 
 </details>
 
-## 7. Is an explanation faithful? How to test it
+## 7. Explaining vision–language models (VLMs)
+
+A typical VLM (for example LLaVA or Qwen-VL) has three parts:
+1. an **image encoder**, often the ViT from CLIP, turns the image into **patch tokens**;
+2. a **projector** maps them into the language model's embedding space;
+3. a **language model** reads image tokens and text tokens together and generates the answer.
+
+![A vision–language model and the grounding question](img/08_vlm.png)
+<sub>A VLM answers a question about an X-ray. Grounding asks which image patches supported a generated word, here "fracture".</sub>
+
+Two questions you can ask:
+- **Grounding:** which image regions supported this word or answer?
+- **Reasoning:** why did it give this answer?
+
+**Grounding methods.** Everything from this chapter transfers, now across modalities:
+- **Attention from text to image tokens:** for an output word, which patches did it attend to? Reshape to the patch grid to get a heatmap. Same caveats as raw attention.
+- **Gradient-weighted relevance** (Chefer et al.) across the text–image attention: word-specific maps.
+- **CLIP similarity maps:** Grad-CAM on the image–text similarity score shows where "a fracture" appears in the image.
+- **Perturbation:** mask image regions and watch the answer change.
+
+**Self-explanations.** You can simply ask: "Is there a fracture? Explain your answer." The model gives a fluent, expert-sounding reason. But:
+- **Plausible** = convincing to a human. **Faithful** = reflects the computation that actually produced the output. These are different.
+- Language models can give fluent reasons that ignore the factor that truly drove the answer, for example a biasing cue in the prompt (Turpin et al., 2023).
+- Treat a self-explanation as a **claim to be tested**, especially in medicine.
+
+**Your access decides your tools:**
+
+| Method | Open weights | Closed API |
+|---|---|---|
+| Self-explanation | ✓ | ✓ |
+| Perturbation / LIME / SHAP | ✓ | ✓ |
+| Attention maps | ✓ | ✗ |
+| Gradients, Integrated Gradients | ✓ | ✗ |
+| Probing, activation patching | ✓ | ✗ |
+
+With a closed model you are limited to black-box methods and to what the model chooses to say.
+
+> [!NOTE]
+> **From the course · Week 11 tutorial, (i).** A VLM, asked "Is this lesion suspicious? Explain your answer", gives a fluent, clinically worded justification. The committee asks: "Doesn't this give us explanations for free?" Respond, and explain how open weights vs a closed API change what you can do.
+
+<details>
+<summary><b>Show the answer</b></summary>
+
+The text explanation costs only a prompt, but it is **not guaranteed to be faithful**: it is generated text, optimised to sound right, and it may describe evidence the model did not use or hallucinate findings. Plausible ≠ faithful, so it is a claim to test. **Open weights:** you can compute text-to-image attention or relevance maps, gradients, Integrated Gradients, probing and activation patching, and use them to check the self-explanation. **Closed API:** you are limited to black-box perturbation (LIME/SHAP-style masking) and the self-explanations.
+
+</details>
+
+## 8. Is an explanation faithful? How to test it
 
 - **Deletion test:** remove inputs in order of attributed importance. A faithful explanation makes the score drop faster than a random order.
 ![A faithful explanation removes the important tokens first, so the score falls faster than with a random order](img/08_deletion.png)
@@ -231,17 +384,40 @@ Better options:
 - **Counterfactual check:** change the evidence the explanation points to and see if the prediction changes.
 - **Agreement across methods:** trust conclusions more when several methods agree.
 
+> [!NOTE]
+> **From the course · Week 11 tutorial, (j).** Several explanation methods produce different heatmaps for the same images. Describe two tests to decide which explanations are faithful.
+
+<details>
+<summary><b>Show the answer</b></summary>
+
+**Deletion test:** remove regions or tokens in order of attributed importance and track the prediction; a faithful explanation makes the score drop fastest, compared with a random order. **Model randomisation:** randomise the weights and recompute; if the explanation barely changes, it reflects the input (for example edges), not the model. Also: counterfactual checks (edit the cited evidence and see whether the prediction changes) and agreement across methods.
+
+</details>
+
 **The out-of-distribution pitfall.** Perturbation methods "remove" parts by replacing them, for example with a black patch. The model never saw such inputs in training. Its reaction may be about the strange patch, not about the missing information. Use natural baselines (blur, mean colour, in-painting), compare several baselines, or train with masking so removal is familiar.
 
-## 8. Common mistakes
+> [!NOTE]
+> **From the course · Week 11 tutorial, (e).** In LIME and SHAP, "removing" a region means replacing it with something (a black patch, a blur). Why can this make an explanation misleading, and how can you reduce the problem?
+
+<details>
+<summary><b>Show the answer</b></summary>
+
+Images with black patches are **out-of-distribution**: the model never saw anything like them, so its response may reflect the artificial patch rather than the missing information. The explanation then describes the model's reaction to the perturbation, not its reasoning on real images. Reduce it with more natural baselines (blur, mean colour, in-painting, content from a background dataset), by comparing several baselines (distrust conclusions that change with the baseline), or by training with masking augmentation so "removed" regions are in-distribution.
+
+</details>
+
+## 9. Common mistakes
 
 - Treating an attention map as proof of the model's reasoning.
 - Using Grad-CAM on a black-box API (it needs gradients).
 - Trusting gradient × input on very confident predictions (saturation).
 - Forgetting that IG depends on the baseline.
 - Treating a fluent LLM explanation as faithful.
+- Reading distances between t-SNE clusters as meaningful. t-SNE keeps neighbours, not global distances.
+- Concluding from a high probe accuracy that the model *uses* that information. Decodable ≠ used.
+- Expecting attention rollout to give a different map per class. It is class-agnostic; use gradient-weighted attention for that.
 
-## 9. How this appears in A2
+## 10. How this appears in A2
 
 - Integrated Gradients on the label head, with a [PAD] baseline.
 - A quantitative check: does attribution fall inside the gold span more than a uniform spread would?
@@ -249,6 +425,12 @@ Better options:
 - C3 compares what the label head says with what the span head marks.
 
 ## Watch and read
+
+**Official course videos** (from the Canvas week pages; Canvas Studio links need your RMIT login). Watch these first: the exam is built on this material.
+- **Week 11 pre-recorded lectures** (neural network model interpretation, explainable AI): [part 1](https://rmit-arc.instructuremedia.com/embed/2763e26e-3072-4b75-b901-52f813e9351d) · [part 2](https://rmit-arc.instructuremedia.com/embed/1d307094-7d05-4000-a163-09c3b0945a29) · [part 3](https://rmit-arc.instructuremedia.com/embed/bc5343be-48f2-48aa-bddb-e5c798f1eec1) · [part 4](https://rmit-arc.instructuremedia.com/embed/2761aa67-258e-4f22-8f4b-06c320804598)
+- Week 11: MLconf, *Interpretability beyond feature attribution* (the TCAV talk, section 5): https://www.youtube.com/watch?v=Ff-Dx79QEEY
+
+**More videos and readings:**
 
 - Christoph Molnar, *Interpretable Machine Learning* (free book), chapters:
   - LIME: https://christophm.github.io/interpretable-ml-book/lime.html
@@ -258,13 +440,21 @@ Better options:
 - Distill, *Visualizing the impact of feature attribution baselines* (why the IG baseline matters, interactive): https://distill.pub/2020/attribution-baselines/
 - Integrated Gradients paper (Sundararajan et al., 2017): https://arxiv.org/abs/1703.01365
 - *Attention is not explanation* (Jain and Wallace, 2019): https://arxiv.org/abs/1902.10186
+- *Attention is not not explanation* (Wiegreffe and Pinter, 2019): https://arxiv.org/abs/1908.04626
+- Attention rollout (Abnar and Zuidema, 2020): https://arxiv.org/abs/2005.00928 · gradient-weighted attention (Chefer et al., 2021): https://arxiv.org/abs/2103.15679
+- TCAV (Kim et al., 2018): https://arxiv.org/abs/1711.11279 · concept bottleneck models (Koh et al., 2020): https://arxiv.org/abs/2007.04612
+- nostalgebraist, *Interpreting GPT: the logit lens*: https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens
+- Anthropic, *In-context learning and induction heads*: https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html · *Towards monosemanticity* (sparse autoencoders): https://transformer-circuits.pub/2023/monosemantic-features
+- Turpin et al., *Language models don't always say what they think* (unfaithful self-explanations): https://arxiv.org/abs/2305.04388
+- Distill, *How to use t-SNE effectively* (interactive): https://distill.pub/2016/misread-tsne/
+- StatQuest, *t-SNE, clearly explained*: https://www.youtube.com/watch?v=NEaUSP4YerM
 
 ---
 
 ## Cheat sheet
 
 > [!IMPORTANT]
-> **The 9 things to remember**
+> **The 12 things to remember**
 > 1. Local = one prediction; global = overall behaviour. Post-hoc vs by design. Model-specific vs agnostic.
 > 2. Explanations are for **trust, debugging (shortcuts) and fairness**.
 > 3. Gradient × input **fails when saturated**.
@@ -272,8 +462,11 @@ Better options:
 > 5. **Grad-CAM** needs feature maps + gradients → not for black-box APIs.
 > 6. **LIME:** perturb, query, weight by closeness, fit a sparse linear model.
 > 7. **SHAP:** average marginal contribution over all orders; fair with interactions; LOO double-counts.
-> 8. **Attention ≠ explanation.** Use rollout, gradient-weighted attention or IG.
-> 9. Test faithfulness: **deletion test, randomisation check, counterfactuals**. Beware OOD perturbations.
+> 8. **Attention ≠ explanation** (flow, not importance). **Rollout** $\tilde A = \prod_l \tfrac12(\bar A^{(l)} + I)$: all layers, class-agnostic. **Gradient-weighted attention**: class-specific (Grad-CAM for attention).
+> 9. Test faithfulness: **deletion test, randomisation check, counterfactuals**, agreement. Beware OOD perturbations.
+> 10. **Feature visualisation** (global): first-layer filters, activations, gradient ascent on the pixels, PCA/t-SNE of features (t-SNE keeps neighbours, not distances).
+> 11. **Probing / logit lens** = what layers *encode* (decodable ≠ used). **Activation patching** = causal test: copy a clean activation into a corrupted run.
+> 12. **VLMs:** ViT encoder → projector → LM. Grounding = which patches support a word (text→image attention, relevance, CLIP Grad-CAM, masking). Self-explanations: plausible ≠ faithful. Closed API → only black-box methods.
 
 > [!TIP]
 > **Memory hooks**
@@ -288,3 +481,5 @@ Better options:
 > - **Compute Shapley values** for $v(\emptyset)=0, v(A)=0.2, v(B)=0.4, v(A,B)=1.0$. (Answer: 0.4 and 0.6.)
 > - **Make a 2 × 2 table:** methods (Grad-CAM, IG, LIME, SHAP) × "needs gradients?" / "works on an API?".
 > - **Explain to a friend** why an LLM's own explanation is not proof of its reasoning.
+> - **Fill the access table** for VLMs (open weights vs closed API, five methods) from memory.
+> - **Describe activation patching** in three steps, and say why it is stronger evidence than an attention map.

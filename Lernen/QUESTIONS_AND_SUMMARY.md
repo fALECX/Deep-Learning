@@ -15,6 +15,10 @@ The questions are in three styles, like the exam: true/false statements (for mul
 - Training = gradient descent on the loss. Backpropagation computes the gradients with the chain rule.
 - Adam/AdamW is the default optimiser. The learning rate is the most important setting.
 - Overfitting is fought with weight decay, dropout, augmentation, early stopping and smaller models.
+- Initialise randomly (break symmetry) and at the right scale (Xavier 1/n, He 2/n for ReLU).
+- BatchNorm normalises each neuron over the mini-batch, then rescales with learned γ and β. Test time uses running averages.
+- Expected test error = bias² + variance + noise. More capacity lowers bias and raises variance; regularisation does the opposite; more data lowers variance.
+- Weight decay multiplies every weight by (1 − ηλ) before each step. L1 makes weights exactly zero.
 
 **Questions**
 
@@ -32,6 +36,24 @@ The questions are in three styles, like the exam: true/false statements (for mul
 
 5. Why are the weights initialised randomly and not all to zero?
 <details><summary>Answer</summary>Equal weights get equal gradients, so all neurons in a layer would stay identical. Random values break this symmetry.</details>
+
+6. True or false: getting more training data reduces the bias of a model.
+<details><summary>Answer</summary>False. It reduces the variance. The bias comes from the model class and its assumptions, which do not change.</details>
+
+7. True or false: adding a bias to a layer that is directly followed by BatchNorm makes the layer more expressive.
+<details><summary>Answer</summary>False. BatchNorm subtracts the batch mean, so the bias cancels out. The learned shift β does its job.</details>
+
+8. Your 30-layer network trains very slowly, and the activations of the last layers are almost all zero. Name the likely cause and two fixes.
+<details><summary>Answer</summary>The initial weights are too small, so the signal shrinks layer by layer (vanishing activations and gradients). Use He initialisation for ReLU (variance 2/n), and add BatchNorm (or residual connections).</details>
+
+9. Explain in 2–3 sentences why L2 regularisation is called weight decay.
+<details><summary>Answer</summary>The gradient of the penalty (λ/2)·Σw² is λw. Put into gradient descent, the update becomes w ← (1 − ηλ)w − η·∂L/∂w. So before each normal step every weight is multiplied by a number slightly below 1 and shrinks ("decays") towards zero unless the data pushes it back.</details>
+
+10. A network uses BatchNorm. At test time you predict one image at a time and get strange results. What is probably wrong?
+<details><summary>Answer</summary>The model is still in training mode, so BatchNorm normalises with the statistics of a "batch" of one image. Call model.eval() so BatchNorm uses the running averages collected during training (and dropout is switched off).</details>
+
+11. Fill in ↑, ↓ or "no change" for bias and variance: (a) wider layers, (b) dropout, (c) more training data, (d) stronger weight decay.
+<details><summary>Answer</summary>(a) bias ↓, variance ↑. (b) bias ↑, variance ↓. (c) bias no change, variance ↓. (d) bias ↑, variance ↓.</details>
 
 ---
 
@@ -124,6 +146,9 @@ The questions are in three styles, like the exam: true/false statements (for mul
 - Foundation models are pretrained at scale and adapted to many tasks.
 - Adaptation spectrum: zero-shot < feature extraction < LoRA/PEFT < full fine-tuning, in cost and usually in flexibility.
 - LoRA: W = W₀ + BA with small rank r. Only A and B train. Mergeable, so no extra inference cost.
+- Other PEFT methods: prompt tuning (learned virtual tokens), prefix tuning (learned keys/values per layer), adapters (small bottleneck layers, small inference cost), QLoRA (LoRA on a 4-bit base model).
+- Image proxy tasks: inpainting, rotation prediction, temporal order. Train on unlabelled data, keep the encoder, transfer.
+- Scaling laws: loss falls as a power law of size, data and compute. Emergent abilities such as in-context learning appear only at scale.
 - Risks: inherited bias, distribution shift, contamination, hallucination.
 
 **Questions**
@@ -142,6 +167,18 @@ The questions are in three styles, like the exam: true/false statements (for mul
 
 5. Why should pretrained layers get a smaller learning rate than the new head?
 <details><summary>Answer</summary>Their weights already encode useful features. Large updates, especially while the new head is still random, would destroy them.</details>
+
+6. True or false: few-shot prompting of an LLM updates its weights with the examples in the prompt.
+<details><summary>Answer</summary>False. In-context learning uses the examples only as input; the weights stay unchanged.</details>
+
+7. You have 50,000 unlabelled CT scans and 300 labelled ones. Describe a self-supervised proxy task and how you would use it.
+<details><summary>Answer</summary>Inpainting: black out a random region of each unlabelled scan and train a network to reconstruct the original. To do this it must learn anatomy. Then keep the encoder, add a small classification head, train it on the 300 labelled scans, and optionally fine-tune the top layers with a small learning rate.</details>
+
+8. A company serves 40 tasks from one base model and needs zero extra latency. Which PEFT method fits best, and why not adapters?
+<details><summary>Answer</summary>LoRA: each task needs only a small BA pair, and it can be merged into W₀, so inference has no extra cost (or the adapter is swapped per request). Classic adapters add extra layers to every block, which adds a small but permanent inference cost.</details>
+
+9. What does a scaling law say, and what is an emergent ability?
+<details><summary>Answer</summary>A scaling law: test loss falls smoothly as a power law when model size, data and compute grow (a straight line on a log–log plot), so the gain from scaling is predictable. An emergent ability is one that is near chance in small models and appears suddenly beyond some scale, for example in-context learning.</details>
 
 ---
 
@@ -177,6 +214,10 @@ The questions are in three styles, like the exam: true/false statements (for mul
 - Precision, recall, F1. Micro-F1 is dominated by frequent classes. Macro-F1 weighs every class equally.
 - Learning curves tell underfitting, overfitting and instability apart.
 - Compare models in pairs on the same folds. Report bootstrap intervals.
+- ML = improve at task T, measured by P, with experience E.
+- Groups (same person, patient) go into one split only. Time series use forward chaining, never shuffled k-fold.
+- ROC = true positive rate vs false positive rate over all thresholds. AUC 0.5 = random, 1 = perfect ranking.
+- Imbalance: suitable metrics, weighted loss, resampling, SMOTE (training split only), more data, anomaly detection.
 
 **Questions**
 
@@ -198,6 +239,18 @@ The questions are in three styles, like the exam: true/false statements (for mul
 6. Your validation loss is below your training loss. Give two harmless explanations and one harmful one.
 <details><summary>Answer</summary>Harmless: dropout is active only during training; training loss is averaged during the epoch while validation loss is measured at its end; the validation set may be easier. Harmful: leakage between training and validation data.</details>
 
+7. A gesture classifier reaches 97% test accuracy, but only 60% in a demo with a new person. The clips of 8 colleagues had been split randomly. What went wrong, and how should it be split?
+<details><summary>Answer</summary>Group leakage: clips of the same person were in training and test, so the model could recognise the person (body, clothes, background) instead of the gesture, and the test score was optimistic. Split by person: all clips of a person go into one split, so test people are never seen in training.</details>
+
+8. You forecast monthly electricity demand from 2015–2024 data. How do you validate?
+<details><summary>Answer</summary>Forward chaining: train on the earliest years and test on the next period, then expand the training window and test on the following period, and so on. Never shuffle, because a shuffled split lets the model learn from the future.</details>
+
+9. True or false: an AUC of 0.5 means the model is right half of the time.
+<details><summary>Answer</summary>False. AUC 0.5 means its scores rank a random positive above a random negative only half the time, which is no better than random guessing. It says nothing directly about accuracy at a threshold.</details>
+
+10. How does SMOTE create a new example, and when must it be applied?
+<details><summary>Answer</summary>Pick a minority example and one of its nearest minority neighbours, and place a new point at a random position on the line between them: x_new = x_i + λ(x_nn − x_i) with λ between 0 and 1. Apply it to the training split only, after splitting, so no synthetic copies of test points leak into training.</details>
+
 ---
 
 ## 08 · Interpretability
@@ -208,8 +261,10 @@ The questions are in three styles, like the exam: true/false statements (for mul
 - Gradient × input fails when the model is saturated. Integrated Gradients averages gradients along a path from a baseline. Its attributions sum to f(x) − f(baseline).
 - Grad-CAM needs feature maps and gradients. LIME and SHAP need only inputs and outputs.
 - Shapley values share interaction effects fairly. Leave-one-out double-counts them.
-- Attention weights are not a full explanation.
+- Attention weights are not a full explanation. Rollout combines all layers (class-agnostic). Gradient-weighted attention is class-specific.
 - Test faithfulness with deletion tests, model randomisation and counterfactuals.
+- Feature visualisation (global): filters, activations, gradient ascent, PCA/t-SNE. Probing and logit lens show what layers encode; activation patching tests causally.
+- VLMs: ViT encoder → projector → language model. Grounding methods need open weights; self-explanations are plausible, not necessarily faithful.
 
 **Questions**
 
@@ -227,6 +282,21 @@ The questions are in three styles, like the exam: true/false statements (for mul
 
 5. Name two tests that check whether an explanation is faithful.
 <details><summary>Answer</summary>Deletion test: removing the most important inputs first should drop the score faster than a random order. Model randomisation: with random weights the explanation should change a lot.</details>
+
+6. True or false: a linear probe reaches 95% accuracy at predicting part of speech from layer 4, so the model uses part of speech for its predictions.
+<details><summary>Answer</summary>False. A probe shows the information is linearly decodable at that layer, not that the model uses it. Decodable ≠ used; an intervention such as activation patching would be needed.</details>
+
+7. Why does attention rollout add the identity matrix to each layer's attention, and what is its main limitation?
+<details><summary>Answer</summary>The identity accounts for the residual connection, which carries each token's own vector to the next layer besides the attention mixing. Limitation: rollout is class-agnostic; it gives the same map whatever class you ask about. Gradient-weighted attention fixes that.</details>
+
+8. In a t-SNE plot of learned features, cluster A is far from cluster B and close to cluster C. What can you conclude?
+<details><summary>Answer</summary>Little about A, B and C. t-SNE keeps neighbourhoods, so tight clusters mean similar examples group together, but distances between clusters and cluster sizes are not reliable. Use PCA or direct distances in feature space for that.</details>
+
+9. A hospital uses a closed-API vision–language model. Which explanation methods are still available, and which are not?
+<details><summary>Answer</summary>Available: the model's self-explanations (to be treated as claims) and black-box perturbation methods such as masking image regions with LIME/SHAP. Not available: attention maps, gradients, Integrated Gradients, probing and activation patching, because they need the weights.</details>
+
+10. Describe activation patching in three steps.
+<details><summary>Answer</summary>Run a clean input and a corrupted input through the model. Copy one component's activation (for example one layer or head) from the clean run into the corrupted run. If the correct output comes back, that component causally carries the needed information.</details>
 
 ---
 
@@ -265,6 +335,9 @@ The questions are in three styles, like the exam: true/false statements (for mul
 - Layers build up from edges to textures to object parts. The receptive field grows with depth.
 - Pooling shrinks feature maps and gives some shift invariance.
 - ResNet adds residual connections. U-Net (encoder–decoder with skip connections) does segmentation.
+- Architecture history: AlexNet (ReLU, dropout, GPUs), VGG (only 3 × 3), GoogLeNet (Inception module, 1 × 1 bottlenecks, GAP, auxiliary classifiers), ResNet (skip connections against the optimisation problem of deep nets), MobileNet (depthwise separable convolutions).
+- Detection: class head + box head; two-stage (proposals, Faster R-CNN) vs one-stage (YOLO, SSD); non-maximum suppression with IoU.
+- Several frames with a 2-D CNN: early fusion (stack as channels) or late fusion (shared CNN per frame).
 - Transfer learning: pretrained ImageNet backbone, new head, freeze, then fine-tune top layers with a small learning rate.
 
 **Questions**
@@ -284,6 +357,24 @@ The questions are in three styles, like the exam: true/false statements (for mul
 5. Name two reasons why max pooling is used.
 <details><summary>Answer</summary>It reduces the size of the feature maps (less compute and fewer parameters later) and it gives some invariance to small shifts of features.</details>
 
+6. True or false: a 56-layer plain CNN has a higher training error than a 20-layer one because it overfits.
+<details><summary>Answer</summary>False. Overfitting would mean a low training error. A higher training error shows an optimisation problem: deep plain networks are hard to train. ResNet's skip connections fix this.</details>
+
+7. A 28 × 28 × 192 input goes into a 5 × 5 conv with 32 filters. How many weights (ignore biases), and how many if a 1 × 1 conv to 16 channels comes first?
+<details><summary>Answer</summary>Without: 5 · 5 · 192 · 32 = 153,600. With: 1 · 1 · 192 · 16 + 5 · 5 · 16 · 32 = 3,072 + 12,800 = 15,872, about 10 times fewer.</details>
+
+8. What do GoogLeNet's auxiliary classifiers do, and are they used at test time?
+<details><summary>Answer</summary>They are small extra classifiers attached to middle layers. Their losses are added (with small weights) to the main loss, which injects extra gradient into the lower layers and fights vanishing gradients. They are used only during training.</details>
+
+9. Two detection boxes: A from (0, 0) to (2, 2), B from (1, 0) to (3, 2). Compute the IoU. With an NMS threshold of 0.5, is the weaker box removed?
+<details><summary>Answer</summary>Overlap = 1 · 2 = 2. Union = 4 + 4 − 2 = 6. IoU = 2/6 ≈ 0.33. Below 0.5, so NMS keeps both boxes (they may be two different objects).</details>
+
+10. Why can you not simply feed 512 × 512 images to AlexNet, while a GAP-based network can take them?
+<details><summary>Answer</summary>AlexNet's fully connected layers expect a flattened vector of fixed length; larger inputs give larger feature maps and the vector no longer fits. Global average pooling turns each feature map into one number whatever its size, so the classifier input length depends only on the number of channels.</details>
+
+11. Your drone must classify 5-frame gesture clips with one 2-D CNN on an embedded board. Describe two ways to combine the frames and one risk in data augmentation.
+<details><summary>Answer</summary>Early fusion: stack the 5 RGB frames as 15 channels into one CNN (cheap, sees motion early, but the pretrained first layer must be adapted). Late fusion: run the same CNN on each frame and average or concatenate the features (reuses ImageNet weights, 5 passes). Risk: horizontal flips swap left and right, so "move left" would be labelled wrongly.</details>
+
 ---
 
 ## 11 · Generative models
@@ -293,6 +384,11 @@ The questions are in three styles, like the exam: true/false statements (for mul
 - VAE: the encoder outputs a distribution, pushed towards N(0, I). Sample z and decode to generate. Often blurry.
 - GAN: a generator fools a discriminator. Sharp samples, unstable training, mode collapse.
 - Diffusion: a fixed forward process adds noise; a learned U-Net removes it step by step. Stable training, high quality, slow sampling.
+- Anomaly detection: train on normal data, threshold the reconstruction error (e.g. mean + 2·std of normal validation errors), judge with ROC/AUC.
+- Denoising and masked autoencoders cannot just copy their input. Latent codes support retrieval and clustering.
+- Reparameterisation trick: z = μ + σ ⊙ ε makes the VAE trainable by backpropagation.
+- Classifier-free guidance pushes the denoiser towards the condition with weight w.
+- Text generation samples the next character or token and feeds it back in. WaveNet generates audio with dilated causal convolutions.
 
 **Questions**
 
@@ -310,3 +406,18 @@ The questions are in three styles, like the exam: true/false statements (for mul
 
 5. Give one strength and one weakness of GANs compared with diffusion models.
 <details><summary>Answer</summary>Strength: sampling is fast (one forward pass). Weakness: training is unstable and can suffer from mode collapse.</details>
+
+6. Why can a VAE not be trained by backpropagation without the reparameterisation trick?
+<details><summary>Answer</summary>The latent z is drawn at random from N(μ, σ²), and you cannot take a gradient through a random draw. Writing z = μ + σ ⊙ ε with ε ~ N(0, I) moves the randomness into ε, so z becomes a differentiable function of μ and σ and gradients reach the encoder.</details>
+
+7. An autoencoder with a 512-dimensional code on 784-pixel images reconstructs perfectly but is useless for anomaly detection. Why, and give two fixes.
+<details><summary>Answer</summary>The code is so large that the network can (nearly) copy any input, so anomalies also reconstruct well. Fixes: make the bottleneck much smaller, or train it as a denoising/masked autoencoder so it cannot simply copy.</details>
+
+8. True or false: in classifier-free guidance, a larger guidance weight w gives more diverse images.
+<details><summary>Answer</summary>False. Larger w follows the prompt more closely but reduces diversity.</details>
+
+9. How does a character-level RNN generate new text after training?
+<details><summary>Answer</summary>Feed a start character. The RNN outputs a softmax over all characters. Sample one character from it, turn it into a one-hot vector and feed it in as the next input, carrying the hidden state along. Repeat until the text is long enough.</details>
+
+10. Name three uses of a trained autoencoder's encoder.
+<details><summary>Answer</summary>A feature extractor for a downstream classifier with few labels (transfer); image retrieval by nearest codes; clustering of the codes. (The whole autoencoder also serves anomaly detection and denoising.)</details>

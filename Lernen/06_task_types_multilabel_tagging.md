@@ -34,6 +34,8 @@ $$
 
 <sub>$z_k$ = raw score (logit) of class $k$ · $p_k$ = predicted probability of class $k$. Softmax divides by the sum of all classes, so raising one class lowers the others. Sigmoid looks at one class at a time.</sub>
 
+**Simply put:** softmax = the classes compete and exactly one wins. Sigmoid = every class gets its own yes/no, so any number of them can be yes.
+
 ![Same raw scores, two output functions](img/06_softmax_vs_sigmoid.png)
 <sub>Same raw scores, two output functions. Softmax spreads one unit of probability; sigmoid lets all three true techniques pass the threshold.</sub>
 

@@ -5,7 +5,7 @@
 
 **The problem.** Good deep models need a lot of labelled data. Labels are expensive. A2 has only 750 labelled memes. The solution is to learn general knowledge first from huge amounts of unlabelled data, and then adapt it with the few labels we have.
 
-**Course material:** Week 5 notebook, *The transfer learning pipeline* with its seven steps (`Week 5/L5_Week5_TransferLearning.ipynb`). Week 9 slides (`Week 9/main_week9_representation_foundation.pdf`), from *Transfer Learning* to *Bias and responsible use*. Week 9 notebook (`Week 9/Lecture_Week09_SSL_LoRA.ipynb`): *Part 2, Self-supervised learning* and *Part 3, Feature extraction, fine-tuning and LoRA*. Week 9 tutorial (`Week 9/COSC2779_Tute9_tex_answers.pdf`).
+**Course material:** Week 5 notebook, *The transfer learning pipeline* with its seven steps (`Week 5/L5_Week5_TransferLearning.ipynb`). Week 9 slides (`Week 9/main_week9_representation_foundation.pdf`), from *Transfer Learning* to *Bias and responsible use*. Week 9 notebook (`Week 9/Lecture_Week09_SSL_LoRA.ipynb`): *Part 2, Self-supervised learning* and *Part 3, Feature extraction, fine-tuning and LoRA*. Week 9 tutorial (`Week 9/COSC2779_Tute9_tex_answers.pdf`). Week 9 lab (`Week 9/week9_foundation_models_lab.ipynb`): *Part 1 decision framework*, *Part 5 LoRA* with *Other PEFT methods*, *Part 7 scenario reasoning*. Week 5 and Week 8 labs: *linear probing, then fine-tuning*.
 
 
 > [!TIP]
@@ -32,7 +32,9 @@ The standard recipe (Week 5, same idea for text in Week 9):
 6. Train only the new head.
 7. Optionally unfreeze some top layers and fine-tune them with a **small learning rate**.
 
-**Why a small learning rate for pretrained layers?** Their weights are already good. Large updates would destroy what they learned, especially early in training while the new head is still random.
+**Why a small learning rate for pretrained layers?** Their weights are already good. Large updates would destroy what they learned, especially early in training while the new head is still random. The Week 5 notebook uses a 10 times smaller learning rate for fine-tuning than for training the head.
+
+**Linear probing.** The labs (Weeks 5, 6 and 8) call steps 5–6 **linear probing**: the backbone is frozen and only a linear head is trained on its features. It is the same as feature extraction with a linear head. Step 7 is **fine-tuning**: continue with the *same* model, unfreeze the backbone (or its top layers), make a new optimiser with a much smaller learning rate, and train on.
 
 > [!NOTE]
 > **From the course · Practice exam, A.2 and C.1 (e).** Which steps belong to fine-tuning in transfer learning? How would you adapt an ImageNet-pretrained ResNet to six waste categories?
@@ -70,14 +72,32 @@ $$
 
 The labels are free, so the model can train on billions of examples. To solve these tasks well, it has to learn grammar, meaning and context.
 
+**Proxy (pretext) tasks for images** (Week 9 slides). The idea is the same: invent a task whose answer is already in the data.
+- **Inpainting:** black out a region and reconstruct it. The slides' medical example: blank out a small region of a CT scan and ask the network to recreate the original scan. Unlabelled scans are plentiful, labelled ones are not.
+- **Rotation prediction:** rotate an image by 0°, 90°, 180° or 270° and predict the angle. To know which way is "up", the network must recognise objects.
+- **Temporal order** ("shuffle and learn"): show video frames and ask whether they are in the right order. This teaches motion and how things change.
+- **Denoising and masking:** corrupt the input and reconstruct it (the denoising autoencoder of doc 11, the masked ECG signals in the Week 11 lab).
+
+![Four proxy tasks: rotation, inpainting, temporal order, masked tokens](img/05_ssl_pretext.png)
+<sub>Four proxy tasks. In each one the correct answer comes from the data itself, so no human has to label anything.</sub>
+
+**The SSL recipe:** (1) train on the proxy task with lots of unlabelled data; (2) throw away the proxy head; (3) use the learned encoder for the real task with transfer learning (section 1) and the few labels you have. Self-supervision needs a large *unlabelled* dataset. Transfer learning needs a pretrained model on a *related* task. Both answer the same question: how to train deep models without many labels.
+
 ## 3. Foundation models
 
 A **foundation model** is a large model pretrained on broad data at scale, usually with self-supervision, that can be adapted to many downstream tasks. Examples: BERT, GPT, Gemini, CLIP.
 
 Why they dominate:
 - **Few labels needed.** The model already "knows" language or images.
-- **Pay once, reuse often.** Pretraining is very expensive but done once. Adapting is cheap.
-- **They work across tasks and even across modalities** (text, images, audio).
+- **Pay once, reuse often (amortised cost).** Pretraining is very expensive but done once. Adapting is cheap, and the cost is shared across every downstream task.
+- **They work across tasks and even across modalities** (text, images, audio). The field moved from one bespoke model per task to one adaptable backbone.
+
+**Scaling laws.** When you make the model, the data and the compute larger, the test loss falls smoothly and predictably. It follows a **power law**: on a plot with logarithmic axes it is a straight line. So "bigger" reliably helps, and labs can predict how good a larger model will be before training it.
+
+**Emergent abilities.** Some abilities are nearly absent in small models and appear quite suddenly beyond a certain scale. The standard example is **in-context learning**: the model learns a task from a few examples written into the prompt, without any weight update.
+
+![Scaling law and emergent ability](img/05_scaling_law.png)
+<sub>Left: loss falls as a straight line on a log–log plot (a power law). Right: an emergent ability stays at chance level, then jumps. Schematic shapes, not real measurements.</sub>
 
 ## 4. The adaptation spectrum, from cheapest to most expensive
 
@@ -126,6 +146,8 @@ $$
 
 <sub>$W_0$ = pretrained weight matrix, frozen · $A$, $B$ = the two small trainable matrices · $r$ = rank, the "width" of the update (for example 8 or 16) · $\alpha$ = scaling factor that sets the strength of the update · $d, k$ = the matrix's output and input sizes.</sub>
 
+**Simply put:** do not touch the big pretrained matrix. Learn a small correction next to it and add it on.
+
 Applied to an input $\mathbf{x}$, the layer computes:
 
 $$
@@ -170,6 +192,29 @@ More details:
 
 In A2, LoRA is implemented from scratch (`LoRALinear` in the notebook). The Week 9 notebook does the same.
 
+**Why does a low rank suffice?** Research found that the update $\Delta W$ needed for fine-tuning has a low **intrinsic rank**: it changes the matrix only along a few directions. Fine-tuning adapts what the model already knows; it does not rebuild it.
+
+**Why the query and value matrices?** This is a lab question. In the LoRA paper, with a fixed budget of trainable parameters, adapting $W_Q$ and $W_V$ together worked best. They control *what each token looks for* and *what it passes on*. It is a good default, not a law: adapting all linear layers also works and is common today.
+
+### Other PEFT methods
+
+LoRA is one member of a family of **parameter-efficient fine-tuning (PEFT)** methods. All keep the pretrained weights frozen and train a few new parameters. They differ in *where* the new parameters sit.
+
+![Where each PEFT method adds its trainable parameters](img/05_peft_methods.png)
+<sub>Grey = frozen pretrained Transformer block; orange = the only trained parameters.</sub>
+
+| Method | What is trained | Trainable share (Week 9 lab) | Extra cost at inference |
+|---|---|---|---|
+| **Prompt tuning** | a few learned "virtual token" vectors prepended to the input | < 0.1% | almost none (a few extra tokens) |
+| **Prefix tuning** | learned key/value vectors added to the attention of every layer | ~0.1–1% | small |
+| **Adapters** | small bottleneck layers (down-project, non-linearity, up-project) inserted in each block | ~2–5% | small, permanent (extra layers) |
+| **LoRA** | low-rank update $BA$ on existing weight matrices | ~0.5–2% | **none** after merging |
+| **QLoRA** | LoRA on top of a frozen model stored in 4-bit numbers | like LoRA | none for LoRA; the base stays 4-bit |
+
+**QLoRA** stores the frozen base model in 4-bit precision instead of 16 or 32 bits. That cuts its memory by a factor of 4 to 8, so large models can be fine-tuned on a single GPU.
+
+**Why is full fine-tuning so memory-hungry?** Training needs, for every weight, the weight itself, its gradient and (with Adam) two extra optimiser numbers. PEFT needs gradients and optimiser state only for the few new parameters.
+
 ## 6. Intermediate and domain-adaptive training
 
 Sometimes there is related labelled or unlabelled data that is closer to the target than general text.
@@ -179,6 +224,8 @@ Sometimes there is related labelled or unlabelled data that is closer to the tar
 ## 7. Zero-shot with large language models
 
 You can prompt a generative model: "Which of these 20 techniques does this meme use? Answer in JSON."
+- **Few-shot / in-context learning:** add a few solved examples to the prompt. The model picks up the pattern from them. There is still **no weight update**; the examples only live in the prompt.
+- **CLIP zero-shot for images:** embed the image and a set of text prompts such as "a photo of a dog", "a photo of a cat". Pick the class whose text embedding is closest to the image embedding. No training on dogs and cats needed.
 - No training data needed.
 - Results depend on the prompt wording.
 - Answers can come in the wrong shape and need careful parsing.
@@ -195,7 +242,9 @@ You can prompt a generative model: "Which of these 20 techniques does this meme 
 
 ## 9. Common mistakes
 
-- "LoRA makes inference slower." No, the adapter can be merged.
+- "LoRA makes inference slower." No, the adapter can be merged. (Classic adapters, however, do add a little permanent cost.)
+- "Few-shot prompting trains the model." No, the weights do not change; the examples only sit in the prompt.
+- Confusing **transfer learning** (needs a model pretrained on a related task) with **self-supervised learning** (needs lots of unlabelled data and a proxy task).
 - "With little data, always freeze." Not always. Test it. In A2 full fine-tuning won even with 750 examples.
 - Using the same learning rate for a fresh head and for pretrained layers. The head needs a larger one.
 - Comparing methods unfairly. Each method needs its usual hyperparameters. LoRA, for example, typically needs a larger learning rate than full fine-tuning.
@@ -209,6 +258,14 @@ You can prompt a generative model: "Which of these 20 techniques does this meme 
 
 ## Watch and read
 
+**Official course videos** (from the Canvas week pages; Canvas Studio links need your RMIT login). Watch these first: the exam is built on this material.
+- Week 9: IBM Technology, *Is fine-tuning still needed? LLMs, RAG and LoRA*: https://www.youtube.com/watch?v=-W2JdSl1v48
+- Week 9: SH AI Academy, *Parameter-efficient fine-tuning explained* (the Week 9 before-class video): https://www.youtube.com/watch?v=-c2aob9hH10
+- **Week 5 pre-recorded lectures** (CNN architectures and transfer learning for images): listed in [doc 10](10_cnns_and_vision.md#watch-and-read).
+- Week 10: Ari Seff, *How ChatGPT is trained*, shows pretraining and adaptation of a large language model: listed in [doc 11](11_generative_models.md#watch-and-read).
+
+**More videos and readings:**
+
 - Jay Alammar, *The illustrated BERT, ELMo and co.* (how NLP cracked transfer learning): https://jalammar.github.io/illustrated-bert/
 - Umar Jamil, *BERT explained: training, inference, fine-tuning*: https://www.youtube.com/watch?v=90mGPxR2GgY
 - Andrej Karpathy, *Intro to large language models* (1 h talk): https://www.youtube.com/watch?v=zjkBMFhNj_g
@@ -216,6 +273,9 @@ You can prompt a generative model: "Which of these 20 techniques does this meme 
 - Hugging Face PEFT docs, *LoRA conceptual guide*: https://huggingface.co/docs/peft/conceptual_guides/lora
 - Hugging Face course, *Fine-tuning a pretrained model*: https://huggingface.co/learn/llm-course/chapter3/1
 - LoRA paper (Hu et al., 2021): https://arxiv.org/abs/2106.09685
+- Hugging Face PEFT docs, *Adapters* (LoRA, prefix and prompt tuning compared): https://huggingface.co/docs/peft/conceptual_guides/adapter
+- Lilian Weng, *Self-supervised representation learning* (proxy tasks for images, video and text): https://lilianweng.github.io/posts/2019-11-10-self-supervised/
+- Papers: rotation prediction https://arxiv.org/abs/1803.07728 · shuffle and learn https://arxiv.org/abs/1603.08561 · scaling laws (Kaplan et al.) https://arxiv.org/abs/2001.08361 · emergent abilities (Wei et al.) https://arxiv.org/abs/2206.07682 · adapters https://arxiv.org/abs/1902.00751 · prefix tuning https://arxiv.org/abs/2101.00190 · prompt tuning https://arxiv.org/abs/2104.08691 · QLoRA https://arxiv.org/abs/2305.14314
 - BERT paper (Devlin et al., 2018): https://arxiv.org/abs/1810.04805
 - *Dive into Deep Learning*, NLP pretraining: https://d2l.ai/chapter_natural-language-processing-pretraining/index.html
 
@@ -224,7 +284,7 @@ You can prompt a generative model: "Which of these 20 techniques does this meme 
 ## Cheat sheet
 
 > [!IMPORTANT]
-> **The 8 things to remember**
+> **The 12 things to remember**
 > 1. Transfer recipe: **new head → freeze → train head → (unfreeze top, small LR)**.
 > 2. Self-supervision = labels from the data itself: masked tokens (BERT), next token (GPT), matching pairs (CLIP).
 > 3. Foundation model = pretrained at scale, adapted to many tasks.
@@ -232,7 +292,11 @@ You can prompt a generative model: "Which of these 20 techniques does this meme 
 > 5. LoRA: $W = W_0 + BA$, $W_0$ frozen, $r \ll d$, params $= r(d+k)$ per matrix, $B$ starts at 0.
 > 6. LoRA adds **no inference cost** (merge $BA$ into $W_0$).
 > 7. Full fine-tuning: best with enough data, but expensive and can forget.
-> 8. Zero-shot LLMs: prompt-sensitive, format can break, stochastic, may be contaminated, may break privacy rules.
+> 8. Zero-shot LLMs: prompt-sensitive, format can break, stochastic, may be contaminated, may break privacy rules. Few-shot = examples in the prompt, no weight update.
+> 9. Image proxy tasks: **inpainting, rotation, temporal order**, denoising. Recipe: proxy task on unlabelled data → keep the encoder → transfer.
+> 10. **Scaling law:** loss falls as a power law of size/data/compute (straight on log–log). **Emergent:** abilities like in-context learning appear only at scale.
+> 11. PEFT family: **prompt tuning** (virtual tokens), **prefix tuning** (K/V per layer), **adapters** (bottleneck layers, small inference cost), **LoRA** (low-rank, mergeable), **QLoRA** (LoRA on a 4-bit base).
+> 12. Linear probing = frozen backbone + linear head; then fine-tune with a much smaller LR.
 
 > [!TIP]
 > **Memory hooks**
@@ -247,3 +311,5 @@ You can prompt a generative model: "Which of these 20 techniques does this meme 
 > - **Compute** the LoRA parameter count for a 1024 × 4096 matrix with $r = 8$. (Answer: $8 \times 5120 = 40{,}960$.)
 > - **Order the four strategies** by cost from memory, and give one pro and one con for each.
 > - **Explain to a friend** why masked-word prediction teaches a model grammar without any labels.
+> - **Invent a proxy task** for unlabelled ECG signals or satellite images, and say what the network must learn to solve it.
+> - **Sketch one Transformer block** and mark where prompt tuning, prefix tuning, adapters and LoRA put their parameters.

@@ -36,6 +36,8 @@ $$
 
 <sub>$\text{FPR}_g$ = false positive rate in group $g$: how often the model flags something that is not there · $\text{FNR}_g$ = false negative rate: how often it misses something that is there. A fair tool has similar rates for all groups.</sub>
 
+**Simply put:** FPR = how often the model accuses something innocent. FNR = how often it misses a real case. Compare both for each group.
+
 - A false positive here means accusing a meme of a technique it does not use. If this happens more for one political side, the tool is unfair to that side.
 - With small groups, the confidence intervals are wide. A "no difference found" result may just mean the test had too little data. Always report the interval.
 
@@ -82,6 +84,9 @@ The deployment data differs from the training data. In probability terms, traini
 
 ![Left: deployment inputs drift away from the training inputs](img/09_shift.png)
 <sub>Left: deployment inputs drift away from the training inputs. Right: the same word means something else (illustrative).</sub>
+
+
+**Simply put:** the real-world data looks different from the training data, so the test score no longer tells you how well the model works.
 
 **How to get evidence without labelled target data:**
 - **Controlled transformations of labelled data.** Change the text in a way that keeps the labels valid, for example replace US names with Australian ones, or lower-case everything. Then measure the score change.
