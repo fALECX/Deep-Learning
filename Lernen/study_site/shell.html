@@ -1,0 +1,65 @@
+<title>COSC2779 Deep Learning</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="study_site/style.css">
+
+<div class="app" id="app">
+  <header class="topbar">
+    <button class="icon-btn only-narrow" id="navToggle" aria-label="Open menu">☰</button>
+    <a class="brand" href="#home" data-route="home">
+      <span class="brand-mark">DL</span>
+      <span class="brand-text">Deep Learning <small>COSC2779</small></span>
+    </a>
+    <div class="search-wrap">
+      <input id="globalSearch" type="search" placeholder="Search  (Ctrl K)" autocomplete="off">
+      <div class="search-results" id="globalResults" hidden></div>
+    </div>
+    <button class="sheet-toggle" id="sheetToggle" aria-label="Toggle cheat sheet" title="Cheat sheet (C)">Cheat sheet</button>
+  </header>
+
+  <nav class="sidenav" id="sidenav" aria-label="Main"></nav>
+
+  <main class="main" id="main" tabindex="-1">
+    <div class="loading">Loading…</div>
+  </main>
+
+  <aside class="sheet" id="sheet" aria-label="Cheat sheet">
+    <div class="sheet-head">
+      <div class="sheet-title">
+        <strong>Cheat sheet</strong>
+        <button class="icon-btn" id="sheetClose" aria-label="Close cheat sheet">✕</button>
+      </div>
+      <div class="sheet-search">
+        <input id="sheetSearch" type="search" placeholder="Search  ( / )" autocomplete="off">
+        <span class="sheet-count" id="sheetCount"></span>
+        <button class="icon-btn" id="sheetPrev" aria-label="Previous match">↑</button>
+        <button class="icon-btn" id="sheetNext" aria-label="Next match">↓</button>
+      </div>
+      <select id="sheetNav" aria-label="Jump to section"></select>
+    </div>
+    <div class="sheet-body md" id="sheetBody"></div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+</div>
+
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]], processEscapes: false },
+    svg: { fontCache: "global" },
+    options: { enableMenu: false },
+    startup: {
+      typeset: false,
+      ready: function () {
+        MathJax.startup.defaultReady();
+        MathJax.startup.promise.then(function () { if (window.__mathReady) window.__mathReady(); });
+      }
+    }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg-full.js" async id="mathjax"></script>
+<script src="study_site/content.js"></script>
+<script src="study_site/exam_bank.js"></script>
+<script src="study_site/app.js"></script>

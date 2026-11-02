@@ -1,4 +1,4 @@
-# 02 · From text to numbers: tokens and embeddings
+ g# 02 · From text to numbers: tokens and embeddings
 
 > [!NOTE]
 > **Colour code for all formulas:** $\textcolor{#3b82f6}{\text{input / data}}$ · $\textcolor{#e8833a}{\text{learned weights}}$ · $\textcolor{#22a06b}{\text{model output}}$ · $\textcolor{#e5484d}{\text{true label}}$ · $\textcolor{#a855f7}{\text{setting you choose}}$
@@ -70,33 +70,26 @@ Models add a few tokens with special jobs:
 
 ## 3. Padding and attention masks
 
-Training uses batches. All sequences in a batch must have the same length. Short ones are filled with [PAD].
+A model does not read one sentence at a time. It reads a **batch**, for example 32 sentences at once, stored as one table with one row per sentence. A table needs rows of equal length. Short sentences are filled with [PAD]:
 
-The model must ignore the padding. An **attention mask** marks real tokens with 1 and padding with 0. Inside attention, the score of every padded position is replaced before the softmax:
+```
+"I love it"                    → [CLS] I    love  it   [SEP]  [PAD]  [PAD]
+"This movie was really great"  → [CLS] this movie was  really great  [SEP]
+```
 
-$$
-\text{score}_{ij} \;\leftarrow\; \begin{cases} \text{score}_{ij} & \text{if token } j \text{ is real} \\ -\infty & \text{if token } j \text{ is padding} \end{cases}
-\qquad\Rightarrow\qquad e^{-\infty} = 0
-$$
+[PAD] is not a word. The model must ignore it. So the tokenizer also returns an **attention mask**: 1 = real token, 0 = [PAD].
 
-<sub>$\text{score}_{ij}$ = how much token $i$ wants to look at token $j$. After the softmax, a score of $-\infty$ becomes a weight of exactly 0, so padding contributes nothing.</sub>
+```
+tokens:  [CLS]  I   love  it  [SEP]  [PAD]  [PAD]
+mask:      1    1    1    1    1      0      0
+```
 
 **Simply put:** mask 1 = read this token. Mask 0 = ignore it, it is only filler.
 
-![Each row is one query token](img/02_padding_mask.png)
-<sub>Each row is one query token. Columns of [PAD] get −∞, so after the softmax their weight is 0.</sub>
+How the model uses the mask inside attention comes in [doc 04, section 3](04_attention_and_transformers.md#3-scaled-dot-product-attention), once attention is explained.
 
 **Dynamic padding** pads each batch only to its own longest sequence, not to a global maximum. Memes are short (median 28 tokens), so this saves a lot of compute in A2.
 
-> [!NOTE]
-> **From the course · Week 8 tutorial, (h).** Messages have very different lengths, but training uses batches. What must attention handle, and how?
-
-<details>
-<summary><b>Show the answer</b></summary>
-
-Pad every message in the batch to the same length, then use a **padding mask**: set the attention scores of padded positions to $-\infty$ before the softmax. Real tokens then give padding a weight of exactly 0.
-
-</details>
 
 **Truncation** cuts sequences that are longer than the model's maximum (often 512 tokens).
 
@@ -220,7 +213,7 @@ $$
 > 1. Pipeline: **text → tokens → IDs → embeddings → model.**
 > 2. Sub-word tokenisation (BPE/WordPiece): fixed vocabulary, rare words split into pieces, **no OOV problem**.
 > 3. Special tokens: [CLS] = summary for classification, [SEP] = separator, [PAD] = filler, [MASK] = hidden token for pretraining.
-> 4. Padding + **attention mask**: padded scores set to $-\infty$ → weight 0.
+> 4. Batch → pad short sentences with [PAD] → **attention mask**: 1 = real, 0 = [PAD]. (How attention uses it: doc 04.)
 > 5. **Offsets** map tokens ↔ characters. Needed for span labels (A2 Part B).
 > 6. One-hot = huge, sparse, no similarity. Embedding = dense learned row of a table.
 > 7. **Static** (word2vec, GloVe): one vector per word. **Contextual** (BERT): a new vector per sentence.

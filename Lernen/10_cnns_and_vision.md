@@ -1,3 +1,4 @@
+
 # 10 · Convolutional neural networks and computer vision
 
 > [!NOTE]
@@ -91,25 +92,87 @@ $$
 Example: 64 filters of size 3 × 3 on a 3-channel input → $64 \cdot (3 \cdot 3 \cdot 3 + 1) = 1{,}792$ weights. A fully connected layer from a 32 × 32 × 3 image to 64 neurons needs $64 \cdot (3{,}072 + 1) = 196{,}672$.
 
 > [!NOTE]
-> **From the course · Week 5 tutorial, Q3 and Q4.** LeNet-style network on a 32 × 32 × 1 input: conv 6@5×5 → avg-pool 2 → conv 16@5×5 → avg-pool 2 → flatten → dense 120 → dense 84 → dense 10. Output shapes, parameters, and the receptive field of the second conv layer?
+> **From the course · Week 5 tutorial, Q3, Q4 and Q5.** LeNet-style network on a 32 × 32 × 1 input: conv 6@5×5 → avg-pool 2 → conv 16@5×5 → avg-pool 2 → flatten → dense 120 → dense 84 → dense 10. (Q3) Output shapes and parameters? (Q4) Receptive field of the second conv layer? (Q5) The same if the first conv has dilation 2?
 
 <details>
 <summary><b>Show the answer</b></summary>
 
+**Zwei Formeln reichen:**
+
+- **Output-Größe** (padding = valid):
+
+$$
+\text{Output} = \frac{N - K}{S} + 1
+$$
+
+  <sub>$N$ = Inputgröße · $K$ = Kernelgröße · $S$ = Stride</sub>
+
+- **Parameter einer Conv-Schicht:**
+
+$$
+\text{Params}_{\text{Conv}} = (K \cdot K \cdot C_{\text{in}} + 1) \cdot C_{\text{out}}
+$$
+
+  <sub>Das „+1“ ist der Bias pro Filter.</sub>
+
+- **Parameter einer Dense-Schicht:**
+
+$$
+\text{Params}_{\text{Dense}} = (\text{Inputs} + 1) \cdot \text{Outputs}
+$$
+
 | Layer | Output shape | Parameters |
 |---|---|---|
-| conv 6@5×5 | 28 × 28 × 6 | 6 · (5·5·1 + 1) = 156 |
-| avg-pool 2 | 14 × 14 × 6 | 0 |
-| conv 16@5×5 | 10 × 10 × 16 | 16 · (5·5·6 + 1) = 2,416 |
-| avg-pool 2 | 5 × 5 × 16 | 0 |
-| flatten | 400 | 0 |
-| dense 120 | 120 | 120 · (400 + 1) = 48,120 |
-| dense 84 | 84 | 84 · (120 + 1) = 10,164 |
-| dense 10 | 10 | 10 · (84 + 1) = 850 |
+| conv 6@5×5, s1 | $(\textcolor{#3b82f6}{32} - \textcolor{#a855f7}{5})/\textcolor{#a855f7}{1} + 1 = \textcolor{#22a06b}{28}$ → $\textcolor{#22a06b}{28} \times \textcolor{#22a06b}{28} \times \textcolor{#a855f7}{6}$ | $\textcolor{#a855f7}{6} \cdot (\textcolor{#a855f7}{5} \cdot \textcolor{#a855f7}{5} \cdot \textcolor{#3b82f6}{1} + \textcolor{#e8833a}{1}) = \textcolor{#e8833a}{156}$ |
+| avg-pool 2, s2 | $(\textcolor{#3b82f6}{28} - \textcolor{#a855f7}{2})/\textcolor{#a855f7}{2} + 1 = \textcolor{#22a06b}{14}$ → $\textcolor{#22a06b}{14} \times \textcolor{#22a06b}{14} \times \textcolor{#3b82f6}{6}$ | 0 |
+| conv 16@5×5, s1 | $(\textcolor{#3b82f6}{14} - \textcolor{#a855f7}{5})/\textcolor{#a855f7}{1} + 1 = \textcolor{#22a06b}{10}$ → $\textcolor{#22a06b}{10} \times \textcolor{#22a06b}{10} \times \textcolor{#a855f7}{16}$ | $\textcolor{#a855f7}{16} \cdot (\textcolor{#a855f7}{5} \cdot \textcolor{#a855f7}{5} \cdot \textcolor{#3b82f6}{6} + \textcolor{#e8833a}{1}) = \textcolor{#e8833a}{2{,}416}$ |
+| avg-pool 2, s2 | $(\textcolor{#3b82f6}{10} - \textcolor{#a855f7}{2})/\textcolor{#a855f7}{2} + 1 = \textcolor{#22a06b}{5}$ → $\textcolor{#22a06b}{5} \times \textcolor{#22a06b}{5} \times \textcolor{#3b82f6}{16}$ | 0 |
+| flatten | $\textcolor{#3b82f6}{5} \cdot \textcolor{#3b82f6}{5} \cdot \textcolor{#3b82f6}{16} = \textcolor{#22a06b}{400}$ | 0 |
+| dense 120 | $\textcolor{#a855f7}{120}$ | $\textcolor{#a855f7}{120} \cdot (\textcolor{#3b82f6}{400} + \textcolor{#e8833a}{1}) = \textcolor{#e8833a}{48{,}120}$ |
+| dense 84 | $\textcolor{#a855f7}{84}$ | $\textcolor{#a855f7}{84} \cdot (\textcolor{#3b82f6}{120} + \textcolor{#e8833a}{1}) = \textcolor{#e8833a}{10{,}164}$ |
+| dense 10 | $\textcolor{#a855f7}{10}$ | $\textcolor{#a855f7}{10} \cdot (\textcolor{#3b82f6}{84} + \textcolor{#e8833a}{1}) = \textcolor{#e8833a}{850}$ |
 
-Total ≈ 61,706 parameters. Receptive field of the second conv: $5 + (2-1) + (5-1)\cdot 2 = 14$, so **14 × 14** pixels (18 × 18 if the first conv had dilation 2).
+<sub>Where each number comes from: $\textcolor{#3b82f6}{\text{blue}}$ = taken from the previous layer's output · $\textcolor{#a855f7}{\text{purple}}$ = written in the code (kernel size, stride, number of filters or neurons) · $\textcolor{#e8833a}{\text{orange}}$ = the $+1$ bias and the resulting weight count · $\textcolor{#22a06b}{\text{green}}$ = the new output size, which becomes blue in the next row. "@" in "6@5×5" means "6 filters of size 5 × 5".</sub>
 
-<sub>Reading the receptive-field sum: the first conv sees 5 pixels; the 2-wide pooling adds 1 more; the second conv adds $(5-1)$ more steps, and each step is now 2 original pixels wide because of the pooling stride, hence $\cdot 2$. "@" in "6@5×5" means "6 filters of size 5 × 5".</sub>
+Total: 156 + 2,416 + 48,120 + 10,164 + 850 = **61,706** parameters. Almost 80 % sit in the first dense layer; the conv layers are cheap because of weight sharing.
+
+---
+
+**Receptive Field** = wie viele Pixel des **Originalbilds** einen Output-Wert beeinflussen. Start mit $RF = 1$, $J = 1$, dann pro Schicht (Pooling zählt mit):
+
+$$
+RF_{\text{neu}} = RF_{\text{alt}} + (K - 1) \cdot J \qquad\qquad J_{\text{neu}} = J \cdot S
+$$
+
+**Dilation $d$:** $K$ durch den effektiven Kernel ersetzen, die Parameter bleiben gleich:
+
+$$
+K_{\text{eff}} = K + (K - 1)(d - 1)
+$$
+
+**Q4: 14 × 14**
+
+| Layer | RF | Jump $J$ |
+|---|---|---|
+| start | $1$ | $1$ |
+| conv k5, s1 | $\textcolor{#3b82f6}{1} + (\textcolor{#a855f7}{5} - 1) \cdot \textcolor{#3b82f6}{1} = \textcolor{#22a06b}{5}$ | $\textcolor{#3b82f6}{1} \cdot \textcolor{#a855f7}{1} = \textcolor{#22a06b}{1}$ |
+| pool k2, s2 | $\textcolor{#3b82f6}{5} + (\textcolor{#a855f7}{2} - 1) \cdot \textcolor{#3b82f6}{1} = \textcolor{#22a06b}{6}$ | $\textcolor{#3b82f6}{1} \cdot \textcolor{#a855f7}{2} = \textcolor{#22a06b}{2}$ |
+| conv k5, s1 | $\textcolor{#3b82f6}{6} + (\textcolor{#a855f7}{5} - 1) \cdot \textcolor{#3b82f6}{2} = \textcolor{#22a06b}{\mathbf{14}}$ | |
+
+Backwards check: $1 \to (1-1)\cdot 1 + 5 = 5$ pooled cells $\to (5-1)\cdot 2 + 2 = 10$ conv1 outputs $\to (10-1)\cdot 1 + 5 = 14$ input pixels.
+
+**Q5: 18 × 18** (first conv with dilation 2)
+
+Effective kernel: $k_{\text{eff}} = \textcolor{#a855f7}{5} + (\textcolor{#a855f7}{5} - 1)(\textcolor{#a855f7}{2} - 1) = \textcolor{#22a06b}{9}$ (5 weights with a gap between each: `X . X . X . X . X`).
+
+| Layer | RF | Jump $J$ |
+|---|---|---|
+| start | $1$ | $1$ |
+| conv $k_{\text{eff}}$ 9, s1 | $\textcolor{#3b82f6}{1} + (\textcolor{#22a06b}{9} - 1) \cdot \textcolor{#3b82f6}{1} = \textcolor{#22a06b}{9}$ | $\textcolor{#22a06b}{1}$ |
+| pool k2, s2 | $\textcolor{#3b82f6}{9} + (\textcolor{#a855f7}{2} - 1) \cdot \textcolor{#3b82f6}{1} = \textcolor{#22a06b}{10}$ | $\textcolor{#3b82f6}{1} \cdot \textcolor{#a855f7}{2} = \textcolor{#22a06b}{2}$ |
+| conv k5, s1 | $\textcolor{#3b82f6}{10} + (\textcolor{#a855f7}{5} - 1) \cdot \textcolor{#3b82f6}{2} = \textcolor{#22a06b}{\mathbf{18}}$ | |
+
+<sub>The first conv still has $6 \cdot (5 \cdot 5 \cdot 1 + 1) = 156$ parameters: a larger receptive field at no extra cost. The shapes do change: $(32 - 9) + 1 = 24$ → pool 12 → conv2 8.</sub>
 
 </details>
 
@@ -148,6 +211,24 @@ $$
 <summary><b>Show the answer</b></summary>
 
 $(7 - 3)/2 + 1 = 3$, so a **3 × 3** output. Each value is the maximum of one 3 × 3 window; the windows overlap by one row/column because the stride (2) is smaller than the window (3).
+
+**Formeln & merken**
+- Pooling nutzt dieselbe Größenformel wie Conv: $\;W_{\text{out}} = (W_{\text{in}} - k)/s + 1$.
+- Die Fenster starten bei Zeile/Spalte $0, s, 2s, \dots$, hier also bei 0, 2 und 4. Jedes Fenster ist $k$ breit, hier die Zeilen/Spalten 0–2, 2–4 und 4–6.
+- Stride < Fenster → die Fenster **überlappen**. Ein großer Wert auf der Überlappung kann in mehreren Outputs auftauchen.
+- Kanäle bleiben gleich, 0 Parameter.
+
+Size: $(\textcolor{#3b82f6}{7} - \textcolor{#a855f7}{3})/\textcolor{#a855f7}{2} + 1 = \textcolor{#22a06b}{3}$
+
+Values (maximum per window; rows × columns of the input):
+
+| | cols 0–2 | cols 2–4 | cols 4–6 |
+|---|---|---|---|
+| **rows 0–2** | $\textcolor{#22a06b}{8}$ | $\textcolor{#22a06b}{8}$ | $\textcolor{#22a06b}{7}$ |
+| **rows 2–4** | $\textcolor{#22a06b}{8}$ | $\textcolor{#22a06b}{8}$ | $\textcolor{#22a06b}{8}$ |
+| **rows 4–6** | $\textcolor{#22a06b}{8}$ | $\textcolor{#22a06b}{7}$ | $\textcolor{#22a06b}{9}$ |
+
+<sub>$\textcolor{#3b82f6}{\text{blue}}$ = input size · $\textcolor{#a855f7}{\text{purple}}$ = window size and stride from the task · $\textcolor{#22a06b}{\text{green}}$ = output. **Note:** the official solution sheet shows 8 in the bottom-right cell. The bottom-right window (rows 4–6, cols 4–6) is 5 8 4 / 3 8 2 / 5 **9** 6, so its maximum is 9. The sheet most likely contains a typo.</sub>
 
 </details>
 

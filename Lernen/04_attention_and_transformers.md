@@ -71,6 +71,46 @@ Step by step for one token $i$:
 ![The same four scores, with and without scaling](img/04_softmax_scaling.png)
 <sub>The same four scores, with and without scaling. Unscaled, the softmax becomes nearly one-hot.</sub>
 
+### The padding mask inside attention
+
+Recap from [doc 02](02_text_to_numbers.md#3-padding-and-attention-masks): short sentences in a batch are filled with [PAD], and the attention mask marks them with 0.
+
+The score table has one row per token (the token being computed, its query) and one column per token (the token it reads from, its key). Before the softmax, every **column** of a [PAD] token is set to $-\infty$:
+
+$$
+\text{score}_{ij} \;\leftarrow\; \begin{cases} \text{score}_{ij} & \text{if token } j \text{ is real} \\ -\infty & \text{if token } j \text{ is padding} \end{cases}
+\qquad\Rightarrow\qquad e^{-\infty} = 0
+$$
+
+<sub>$\text{score}_{ij}$ = how much token $i$ reads from token $j$. After the softmax, $-\infty$ becomes a weight of exactly 0.</sub>
+
+```
+row "I":   scores  [ 2.0   1.0   -∞    -∞  ]
+           e^x     [ 7.4   2.7    0     0  ]   sum = 10.1
+           weights [ 0.73  0.27   0     0  ]   → "I" reads nothing from [PAD]
+```
+
+![Each row is one query token](img/02_padding_mask.png)
+<sub>Each row is one query token. Columns of [PAD] get −∞, so after the softmax their weight is 0.</sub>
+
+**Why do the [PAD] rows still have scores?** [PAD] has an embedding too, so it has a query, and its row can be computed. Its output is never used: classification reads only [CLS], and pooling and the loss drop [PAD] positions. Blocking the whole row would not work either:
+
+```
+row "[PAD]" fully blocked:  e^x = [0 0 0 0]  →  0 / 0  →  NaN  → training breaks
+```
+
+**Simply put:** columns blocked = real tokens ignore [PAD]. [PAD] rows compute rubbish that nobody reads.
+
+> [!NOTE]
+> **From the course · Week 8 tutorial, (h).** Messages have very different lengths, but training uses batches. What must attention handle, and how?
+
+<details>
+<summary><b>Show the answer</b></summary>
+
+Pad every message in the batch to the same length, then use a **padding mask**: set the attention scores of padded positions to $-\infty$ before the softmax. Real tokens then give padding a weight of exactly 0.
+
+</details>
+
 ## 4. Multi-head attention
 
 One attention computes one set of weights per token. But a word relates to others in several ways at once: grammar, meaning, nearby words, references.
